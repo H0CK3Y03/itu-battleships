@@ -43,8 +43,9 @@ frontend
 
 
 to run:
+dev:
 npx tauri dev     in root
-
+production:
 to build: (npm run build      in frontend first)
 cargo build --release --target x86_64-pc-windows-gnu     in src-tauri
 or:
@@ -52,3 +53,16 @@ npx tauri build --target x86_64-pc-windows-gnu           in root
 
 executable:
 src-tauri/target/x86../release/app.exe
+
+server:
+dev:
+npm run start
+production:
+build:
+npm run build       in backend
+run:
+node dist/server.js      in backend
+
+http://localhost:xxxx/
+server: port 5000
+frontend: port 5173
