@@ -1,0 +1,15 @@
+{
+  "name": "battleships_game-master",
+  "version": "1.0.0",
+  "description": "### Setup - need to have installed and included in path: node, npm - open 2 terminals - in 1st terminal run:",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.4"
+  }
+}

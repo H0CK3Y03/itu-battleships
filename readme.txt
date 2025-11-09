@@ -39,3 +39,8 @@ frontend
             Title.tsx
         App.css
         App.js
+
+
+
+to run:
+npx tauri dev     in root
