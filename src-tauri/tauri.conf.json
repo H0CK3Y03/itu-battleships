@@ -2,9 +2,9 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "battleships_game-master",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.battleships.dev",
   "build": {
-    "frontendDist": "frontend/dist",
+    "frontendDist": "../frontend/dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev --prefix ../battleships_game-master/frontend",
     "beforeBuildCommand": "npm run build --prefix ../battleships_game-master/frontend"

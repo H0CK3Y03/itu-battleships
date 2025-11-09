@@ -44,3 +44,11 @@ frontend
 
 to run:
 npx tauri dev     in root
+
+to build: (npm run build      in frontend first)
+cargo build --release --target x86_64-pc-windows-gnu     in src-tauri
+or:
+npx tauri build --target x86_64-pc-windows-gnu           in root
+
+executable:
+src-tauri/target/x86../release/app.exe
