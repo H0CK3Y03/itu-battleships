@@ -1,20 +1,23 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "battleships_game-master",
+  "productName": "Battleships",
   "version": "0.1.0",
   "identifier": "com.battleships.dev",
+
   "build": {
     "frontendDist": "../frontend/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev --prefix ../battleships_game-master/frontend",
-    "beforeBuildCommand": "npm run build --prefix ../battleships_game-master/frontend"
+
+    "beforeDevCommand": "npm run dev --prefix ./frontend",
+    "beforeBuildCommand": "npm run build --prefix ./frontend && npm run build --prefix ./backend"
   },
+
   "app": {
     "windows": [
       {
-        "title": "Sink Simulator",
-        "width": 800,
-        "height": 600,
+        "title": "Battleships",
+        "width": 1024,
+        "height": 720,
         "resizable": true,
         "fullscreen": false
       }
@@ -23,6 +26,7 @@
       "csp": null
     }
   },
+
   "bundle": {
     "active": true,
     "targets": "all",
@@ -32,6 +36,17 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
-  }
+    ],
+
+    "resources": [
+      "../backend/dist/backend.exe"
+    ],
+
+    "externalBin": [],
+    "windows": {
+      "nsis": null
+    }
+  },
+
+  "plugins": {}
 }
