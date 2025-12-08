@@ -66,3 +66,13 @@ node dist/server.js      in backend
 http://localhost:xxxx/
 server: port 5000
 frontend: port 5173
+
+
+
+to run app:
+    npm run build                                     (in backend and frontend)
+    npx tauri build --target x86_64-pc-windows-gnu    (in root)
+executable:
+    src-tauri/target/x86../release/app.exe
+installer:
+    src-tauri/target/x86../release/bundle/Battleships...
