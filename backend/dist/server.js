@@ -10,7 +10,8 @@ const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
 const PORT = 5000;
 // Determine if we're running from bundled exe or dev environment
-const isPackaged = !__dirname.includes('node_modules') && !__dirname.includes('src');
+// When bundled with pkg, process.pkg is defined
+const isPackaged = process.pkg !== undefined || (!__dirname.includes('node_modules') && !__dirname.includes('src'));
 // Get the base directory for data files
 const getDataDir = () => {
     if (isPackaged) {
