@@ -19,7 +19,8 @@ const getDataDir = () => {
   if (isPackaged && TAURI_LOGS_DIR) {
     // When bundled with Tauri, use logs directory for writable data
     const logsPath = path.resolve(TAURI_LOGS_DIR);
-    return path.join(logsPath, '..', 'data'); // data folder next to logs
+    const parentDir = path.dirname(logsPath);
+    return path.join(parentDir, 'data'); // data folder next to logs
   } else if (isPackaged) {
     // Fallback for other packaged scenarios
     return path.join(process.cwd(), 'data');
