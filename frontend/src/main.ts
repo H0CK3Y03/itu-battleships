@@ -26,21 +26,24 @@ async function initApp() {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       console.log('Starting backend...');
+      
+      // The Rust code will now show dialogs, but we still handle errors
       const result = await invoke('start_backend');
-      console.log('Backend startup command result:', result);
+      console.log('Backend startup result:', result);
       
       // Poll for backend health
       console.log('Waiting for backend to be ready...');
       const isHealthy = await checkBackendHealth();
       
       if (!isHealthy) {
-        throw new Error('Backend failed to start within 10 seconds');
+        throw new Error('Backend failed to respond to health checks within 10 seconds.\n\nCheck the logs folder next to the app executable for details.');
       }
       
       console.log('Backend is ready!');
     } catch (error) {
       console.error('Failed to start backend:', error);
-      alert(`Failed to start game backend: ${error}\n\nPlease check the logs and restart the application.`);
+      // The Rust side already showed a dialog, but show frontend error too
+      alert(`Failed to start game backend:\n\n${error}\n\nThe application may not function correctly.`);
     }
   } else {
     console.log('Running in browser mode - expecting external backend on port 5000');
