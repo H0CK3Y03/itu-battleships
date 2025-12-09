@@ -44,9 +44,9 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         Command::new(&backend_path)
-            .env("TAURI_RESOURCE_DIR", resource_dir.to_str().unwrap_or(""))
-            .env("TAURI_APP_DATA_DIR", app_data_dir.to_str().unwrap_or(""))
-            .stdout(Stdio::from(log_file.try_clone().unwrap()))
+            .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
+            .env("TAURI_APP_DATA_DIR", app_data_dir.to_string_lossy().to_string())
+            .stdout(Stdio::from(log_file.try_clone().map_err(|e| format!("Failed to clone log file handle: {}", e))?))
             .stderr(Stdio::from(log_file))
             .spawn()
             .map_err(|e| format!("Failed to start backend.exe: {}\nPath: {:?}", e, backend_path))?;
@@ -62,9 +62,9 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
             .ok();
 
         Command::new(path_str)
-            .env("TAURI_RESOURCE_DIR", resource_dir.to_str().unwrap_or(""))
-            .env("TAURI_APP_DATA_DIR", app_data_dir.to_str().unwrap_or(""))
-            .stdout(Stdio::from(log_file.try_clone().unwrap()))
+            .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
+            .env("TAURI_APP_DATA_DIR", app_data_dir.to_string_lossy().to_string())
+            .stdout(Stdio::from(log_file.try_clone().map_err(|e| format!("Failed to clone log file handle: {}", e))?))
             .stderr(Stdio::from(log_file))
             .spawn()
             .map_err(|e| format!("Failed to start backend: {}\nPath: {}", e, path_str))?;

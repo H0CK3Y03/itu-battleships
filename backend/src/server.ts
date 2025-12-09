@@ -37,6 +37,7 @@ if (!fs.existsSync(dataDir)) {
 
 // Initialize data files from bundled resources if they don't exist
 const initializeDataFiles = () => {
+  const DEFAULT_GRID_SIZE = 10;
   const dataFiles = [
     'game_settings.json',
     'curr_screen.json',
@@ -65,10 +66,10 @@ const initializeDataFiles = () => {
       const defaults: Record<string, any> = {
         'game_settings.json': { selectedBoard: '10x10' },
         'curr_screen.json': { current_screen: 'menu' },
-        'player_grid.json': { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
-        'pc_grid.json': { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
+        'player_grid.json': { gridSize: DEFAULT_GRID_SIZE, tiles: Array(DEFAULT_GRID_SIZE).fill(null).map(() => Array(DEFAULT_GRID_SIZE).fill('empty')) },
+        'pc_grid.json': { gridSize: DEFAULT_GRID_SIZE, tiles: Array(DEFAULT_GRID_SIZE).fill(null).map(() => Array(DEFAULT_GRID_SIZE).fill('empty')) },
         'planning.json': {
-          player_grid: { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
+          player_grid: { gridSize: DEFAULT_GRID_SIZE, tiles: Array(DEFAULT_GRID_SIZE).fill(null).map(() => Array(DEFAULT_GRID_SIZE).fill('empty')) },
           all_ships: null,
           available_ships: null,
           placed_ships: null,

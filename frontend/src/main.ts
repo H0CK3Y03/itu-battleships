@@ -2,10 +2,12 @@ import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 
+const BACKEND_URL = 'http://localhost:5000';
+
 async function checkBackendHealth(maxAttempts = 20, intervalMs = 500): Promise<boolean> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const response = await fetch('http://localhost:5000/api/status');
+      const response = await fetch(`${BACKEND_URL}/api/status`);
       if (response.ok) {
         const data = await response.json();
         console.log('Backend health check passed:', data);
