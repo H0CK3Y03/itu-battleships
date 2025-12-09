@@ -11,14 +11,16 @@ const app = (0, express_1.default)();
 const PORT = 5000;
 // Get directories from environment variables set by Tauri
 const TAURI_RESOURCE_DIR = process.env.TAURI_RESOURCE_DIR;
-const TAURI_APP_DATA_DIR = process.env.TAURI_APP_DATA_DIR;
+const TAURI_LOGS_DIR = process.env.TAURI_LOGS_DIR;
 // Determine if we're running from bundled exe
 const isPackaged = process.pkg !== undefined || TAURI_RESOURCE_DIR !== undefined;
 // Get the base directory for data files
 const getDataDir = () => {
-    if (isPackaged && TAURI_APP_DATA_DIR) {
-        // When bundled with Tauri, use app data directory (writable)
-        return path_1.default.join(TAURI_APP_DATA_DIR, 'data');
+    if (isPackaged && TAURI_LOGS_DIR) {
+        // When bundled with Tauri, use logs directory for writable data
+        const logsPath = path_1.default.resolve(TAURI_LOGS_DIR);
+        const parentDir = path_1.default.dirname(logsPath);
+        return path_1.default.join(parentDir, 'data'); // data folder next to logs
     }
     else if (isPackaged) {
         // Fallback for other packaged scenarios
@@ -83,7 +85,7 @@ console.log('='.repeat(50));
 console.log('Battleships Backend Starting...');
 console.log('Environment:', isPackaged ? 'PACKAGED' : 'DEVELOPMENT');
 console.log('TAURI_RESOURCE_DIR:', TAURI_RESOURCE_DIR || 'not set');
-console.log('TAURI_APP_DATA_DIR:', TAURI_APP_DATA_DIR || 'not set');
+console.log('TAURI_LOGS_DIR:', TAURI_LOGS_DIR || 'not set');
 console.log('Data directory:', dataDir);
 console.log('='.repeat(50));
 try {

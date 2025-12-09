@@ -5,75 +5,146 @@ use tauri::{AppHandle, Manager};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use std::thread;
-use std::fs::OpenOptions;
+use std::fs::{self, File, OpenOptions};
 use std::io::Write;
+use std::path::PathBuf;
+
+fn get_logs_dir() -> Result<PathBuf, String> {
+    // Get the directory where the exe is running
+    let exe_path = std::env::current_exe()
+        .map_err(|e| format!("Failed to get exe path: {}", e))?;
+    
+    let exe_dir = exe_path.parent()
+        .ok_or("Failed to get exe directory")?;
+    
+    let logs_dir = exe_dir.join("logs");
+    
+    // Create logs directory if it doesn't exist
+    fs::create_dir_all(&logs_dir)
+        .map_err(|e| format!("Failed to create logs directory: {}", e))?;
+    
+    Ok(logs_dir)
+}
+
+fn log_to_file(logs_dir: &PathBuf, filename: &str, message: &str) {
+    let log_path = logs_dir.join(filename);
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+    {
+        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = writeln!(file, "[{}] {}", timestamp, message);
+    }
+}
 
 #[tauri::command]
 async fn start_backend(app: AppHandle) -> Result<String, String> {
+    let logs_dir = get_logs_dir()?;
+    
+    log_to_file(&logs_dir, "tauri_startup.log", "=== Backend Startup Attempt ===");
+    
+    // Resolve backend.exe path
     let backend_path = app
         .path()
         .resolve("backend.exe", tauri::path::BaseDirectory::Resource)
-        .map_err(|e| format!("Failed to resolve backend.exe: {}", e))?;
-
+        .map_err(|e| {
+            let err_msg = format!("Failed to resolve backend.exe: {}", e);
+            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+            err_msg
+        })?;
+    
+    log_to_file(&logs_dir, "tauri_startup.log", &format!("Backend path: {:?}", backend_path));
+    
+    // Check if backend.exe actually exists
+    if !backend_path.exists() {
+        let err_msg = format!("Backend.exe does not exist at path: {:?}", backend_path);
+        log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+        return Err(err_msg);
+    }
+    
+    log_to_file(&logs_dir, "tauri_startup.log", "Backend.exe exists, attempting to spawn...");
+    
+    // Get resource and app data directories
     let resource_dir = app
         .path()
         .resource_dir()
         .map_err(|e| format!("Failed to get resource directory: {}", e))?;
-
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-
-    // Create app data directory if it doesn't exist
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data directory: {}", e))?;
-
-    println!("Backend path: {:?}", backend_path);
-    println!("Resource directory: {:?}", resource_dir);
-    println!("App data directory: {:?}", app_data_dir);
-
-    // Create log file for backend output
-    let log_path = app_data_dir.join("backend.log");
-    let log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-        .map_err(|e| format!("Failed to create log file: {}", e))?;
-
+    
+    log_to_file(&logs_dir, "tauri_startup.log", &format!("Resource directory: {:?}", resource_dir));
+    
+    // Create log files for backend output
+    let backend_log_path = logs_dir.join("backend.log");
+    let backend_err_path = logs_dir.join("backend_error.log");
+    
+    log_to_file(&logs_dir, "tauri_startup.log", &format!("Backend log will be at: {:?}", backend_log_path));
+    
+    // Create fresh log files
+    let stdout_file = File::create(&backend_log_path)
+        .map_err(|e| {
+            let err_msg = format!("Failed to create backend.log: {}", e);
+            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+            err_msg
+        })?;
+    
+    let stderr_file = File::create(&backend_err_path)
+        .map_err(|e| {
+            let err_msg = format!("Failed to create backend_error.log: {}", e);
+            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+            err_msg
+        })?;
+    
+    log_to_file(&logs_dir, "tauri_startup.log", "Log files created, spawning process...");
+    
     #[cfg(target_os = "windows")]
     {
         Command::new(&backend_path)
             .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
-            .env("TAURI_APP_DATA_DIR", app_data_dir.to_string_lossy().to_string())
-            .stdout(Stdio::from(log_file.try_clone().map_err(|e| format!("Failed to clone log file handle: {}", e))?))
-            .stderr(Stdio::from(log_file))
+            .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
+            .stdout(Stdio::from(stdout_file))
+            .stderr(Stdio::from(stderr_file))
             .spawn()
-            .map_err(|e| format!("Failed to start backend.exe: {}\nPath: {:?}", e, backend_path))?;
+            .map_err(|e| {
+                let err_msg = format!("Failed to spawn backend.exe: {}\nPath: {:?}", e, backend_path);
+                log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+                err_msg
+            })?;
     }
-
+    
     #[cfg(target_os = "linux")]
     {
         let path_str = backend_path.to_str().ok_or("Invalid path")?;
+        
+        // Make executable
         std::process::Command::new("chmod")
             .arg("+x")
             .arg(path_str)
             .status()
             .ok();
-
+        
+        log_to_file(&logs_dir, "tauri_startup.log", "Made backend executable (chmod +x)");
+        
         Command::new(path_str)
             .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
-            .env("TAURI_APP_DATA_DIR", app_data_dir.to_string_lossy().to_string())
-            .stdout(Stdio::from(log_file.try_clone().map_err(|e| format!("Failed to clone log file handle: {}", e))?))
-            .stderr(Stdio::from(log_file))
+            .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
+            .stdout(Stdio::from(stdout_file))
+            .stderr(Stdio::from(stderr_file))
             .spawn()
-            .map_err(|e| format!("Failed to start backend: {}\nPath: {}", e, path_str))?;
+            .map_err(|e| {
+                let err_msg = format!("Failed to spawn backend: {}\nPath: {}", e, path_str);
+                log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
+                err_msg
+            })?;
     }
-
-    // Wait longer and check if backend is responsive
+    
+    log_to_file(&logs_dir, "tauri_startup.log", "Process spawned successfully, waiting 3 seconds...");
+    
+    // Wait for backend to start
     thread::sleep(Duration::from_secs(3));
     
-    Ok(format!("Backend started from: {:?}\nLogs: {:?}", backend_path, log_path))
+    log_to_file(&logs_dir, "tauri_startup.log", "Startup complete");
+    
+    Ok(format!("Backend started from: {:?}\nLogs: {:?}", backend_path, logs_dir))
 }
 
 #[tauri::command]
