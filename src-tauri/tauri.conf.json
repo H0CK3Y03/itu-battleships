@@ -39,7 +39,8 @@
     ],
 
     "resources": [
-      "../backend/dist/backend.exe"
+      "../backend/dist/backend.exe",
+      "../backend/data/*.json"
     ],
 
     "externalBin": [],

@@ -7,20 +7,46 @@ import { IPlanningData, IPlacedShip, IShip } from './data_interfaces';
 const app = express();
 const PORT = 5000;
 
+// Determine if we're running from bundled exe or dev environment
+// When bundled with pkg, process.pkg is defined
+const isPackaged = (process as any).pkg !== undefined || (!__dirname.includes('node_modules') && !__dirname.includes('src'));
+
+// Get the base directory for data files
+const getDataDir = () => {
+  if (isPackaged) {
+    // When bundled, data files are in resources folder
+    return path.join(process.cwd(), 'data');
+  } else {
+    // In development, use the standard path
+    return path.join(__dirname, '..', 'data');
+  }
+};
+
+const dataDir = getDataDir();
+
+// Ensure data directory exists
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // path for json for settings
-const settingsPath = path.join(__dirname, '..', 'data', 'game_settings.json');
+const settingsPath = path.join(dataDir, 'game_settings.json');
 
 // path for json for screen
-const screenPath = path.join(__dirname, '..', 'data', 'curr_screen.json');
+const screenPath = path.join(dataDir, 'curr_screen.json');
 
 // path for json for player grid
-const playerGridPath = path.join(__dirname, '..', 'data', 'player_grid.json');
+const playerGridPath = path.join(dataDir, 'player_grid.json');
 
 // path for json for pc grid (or 2nd player)
-const pcGridPath = path.join(__dirname, '..', 'data', 'pc_grid.json');
+const pcGridPath = path.join(dataDir, 'pc_grid.json');
 
 // path for json for ships
-const planningPath = path.join(__dirname, '..', 'data', 'planning.json');
+const planningPath = path.join(dataDir, 'planning.json');
+
+// Log paths for debugging
+console.log('Data directory:', dataDir);
+console.log('Settings path:', settingsPath);
 
 app.use(cors());
 app.use(express.json());
@@ -647,6 +673,22 @@ app.post('/api/planning/restore-available-ships', (req: Request, res: Response) 
 // Endpoint for '/'
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to the Battleships Game Backend!');
+});
+
+// Health check/status endpoint for debugging
+app.get('/api/status', (req: Request, res: Response) => {
+  res.json({
+    status: 'running',
+    version: '1.0.0',
+    dataDir: dataDir,
+    files: {
+      settings: fs.existsSync(settingsPath),
+      screen: fs.existsSync(screenPath),
+      planning: fs.existsSync(planningPath),
+      playerGrid: fs.existsSync(playerGridPath),
+      pcGrid: fs.existsSync(pcGridPath),
+    }
+  });
 });
 
 app.listen(PORT, () => {
