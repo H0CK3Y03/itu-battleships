@@ -73,7 +73,7 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     // Resolve backend.exe path
     let backend_path = match app
         .path()
-        .resolve("backend.exe", tauri::path::BaseDirectory::Resource)
+        .resolve("_up_/backend/dist/backend.exe", tauri::path::BaseDirectory::Resource)
     {
         Ok(path) => path,
         Err(e) => {
@@ -213,6 +213,16 @@ fn exit_app() {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // auto-start backend when Tauri is setting up
+        .setup(|app| {
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                // Optionally ignore or log the result
+                let _ = start_backend(app_handle).await;
+            });
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![start_backend, exit_app])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
