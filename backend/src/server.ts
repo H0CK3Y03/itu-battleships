@@ -20,13 +20,13 @@ const getDataDir = () => {
     // When bundled with Tauri, use logs directory for writable data
     const logsPath = path.resolve(TAURI_LOGS_DIR);
     const parentDir = path.dirname(logsPath);
-    return path.join(parentDir, 'data'); // data folder next to logs
+    return path.join(parentDir, '_up_', 'backend', 'data'); // data folder
   } else if (isPackaged) {
     // Fallback for other packaged scenarios
-    return path.join(process.cwd(), 'data');
+    return path.join(process.cwd(), '_up_', 'backend', 'data');
   } else {
     // In development
-    return path.join(__dirname, '..', 'data');
+    return path.join(__dirname, '..', 'backend', 'data');
   }
 };
 
@@ -56,7 +56,8 @@ const initializeDataFiles = () => {
       
       // Try to copy from bundled resources
       if (TAURI_RESOURCE_DIR) {
-        const sourcePath = path.join(TAURI_RESOURCE_DIR, 'data', file);
+        const sourcePath = path.join(TAURI_RESOURCE_DIR, '_up_', 'backend', 'data', file);
+        console.log('Trying to copy from:', sourcePath);
         if (fs.existsSync(sourcePath)) {
           fs.copyFileSync(sourcePath, targetPath);
           console.log(`Copied ${file} from resources`);
