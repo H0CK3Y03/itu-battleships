@@ -147,8 +147,8 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         spawn_result = Command::new(&backend_path)
-            .env("TAURI_RESOURCE_DIR", resource_dir.to_str().unwrap_or(""))
-            .env("TAURI_LOGS_DIR", logs_dir.to_str().unwrap_or(""))
+            .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
+            .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
             .spawn();
@@ -168,8 +168,8 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
         log_to_file(&logs_dir, "tauri_startup.log", "Made backend executable (chmod +x)");
         
         spawn_result = Command::new(path_str)
-            .env("TAURI_RESOURCE_DIR", resource_dir.to_str().unwrap_or(""))
-            .env("TAURI_LOGS_DIR", logs_dir.to_str().unwrap_or(""))
+            .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
+            .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
             .spawn();
