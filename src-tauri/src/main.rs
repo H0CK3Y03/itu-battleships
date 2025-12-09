@@ -8,6 +8,7 @@ use std::thread;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 fn get_logs_dir() -> Result<PathBuf, String> {
     // Get the directory where the exe is running
@@ -38,38 +39,76 @@ fn log_to_file(logs_dir: &PathBuf, filename: &str, message: &str) {
     }
 }
 
+fn show_error_dialog(app: &AppHandle, title: &str, message: &str) {
+    app.dialog()
+        .message(message)
+        .title(title)
+        .kind(MessageDialogKind::Error)
+        .buttons(MessageDialogButtons::Ok)
+        .show(|_| {});
+}
+
+fn show_info_dialog(app: &AppHandle, title: &str, message: &str) {
+    app.dialog()
+        .message(message)
+        .title(title)
+        .kind(MessageDialogKind::Info)
+        .buttons(MessageDialogButtons::Ok)
+        .show(|_| {});
+}
+
 #[tauri::command]
 async fn start_backend(app: AppHandle) -> Result<String, String> {
-    let logs_dir = get_logs_dir()?;
+    let logs_dir = match get_logs_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            let err_msg = format!("Failed to create logs directory:\n{}", e);
+            show_error_dialog(&app, "Backend Startup Error", &err_msg);
+            return Err(e);
+        }
+    };
     
     log_to_file(&logs_dir, "tauri_startup.log", "=== Backend Startup Attempt ===");
     
     // Resolve backend.exe path
-    let backend_path = app
+    let backend_path = match app
         .path()
         .resolve("backend.exe", tauri::path::BaseDirectory::Resource)
-        .map_err(|e| {
-            let err_msg = format!("Failed to resolve backend.exe: {}", e);
-            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-            err_msg
-        })?;
+    {
+        Ok(path) => path,
+        Err(e) => {
+            let err_msg = format!("Failed to find backend.exe in bundle:\n{}\n\nLogs location: {:?}", e, logs_dir);
+            log_to_file(&logs_dir, "tauri_startup.log", &format!("Failed to resolve backend.exe: {}", e));
+            show_error_dialog(&app, "Backend Not Found", &err_msg);
+            return Err(format!("Failed to resolve backend.exe: {}", e));
+        }
+    };
     
     log_to_file(&logs_dir, "tauri_startup.log", &format!("Backend path: {:?}", backend_path));
     
     // Check if backend.exe actually exists
     if !backend_path.exists() {
-        let err_msg = format!("Backend.exe does not exist at path: {:?}", backend_path);
-        log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-        return Err(err_msg);
+        let err_msg = format!(
+            "Backend.exe does not exist at:\n{:?}\n\nPlease rebuild the application.\n\nLogs location: {:?}",
+            backend_path, logs_dir
+        );
+        log_to_file(&logs_dir, "tauri_startup.log", "Backend.exe does not exist");
+        show_error_dialog(&app, "Backend Missing", &err_msg);
+        return Err(format!("Backend.exe does not exist at path: {:?}", backend_path));
     }
     
     log_to_file(&logs_dir, "tauri_startup.log", "Backend.exe exists, attempting to spawn...");
     
-    // Get resource and app data directories
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Failed to get resource directory: {}", e))?;
+    // Get resource directory
+    let resource_dir = match app.path().resource_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            let err_msg = format!("Failed to get resource directory:\n{}\n\nLogs location: {:?}", e, logs_dir);
+            log_to_file(&logs_dir, "tauri_startup.log", &format!("Failed to get resource directory: {}", e));
+            show_error_dialog(&app, "Path Resolution Error", &err_msg);
+            return Err(format!("Failed to get resource directory: {}", e));
+        }
+    };
     
     log_to_file(&logs_dir, "tauri_startup.log", &format!("Resource directory: {:?}", resource_dir));
     
@@ -77,38 +116,42 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     let backend_log_path = logs_dir.join("backend.log");
     let backend_err_path = logs_dir.join("backend_error.log");
     
-    log_to_file(&logs_dir, "tauri_startup.log", &format!("Backend log will be at: {:?}", backend_log_path));
+    log_to_file(&logs_dir, "tauri_startup.log", &format!("Backend log: {:?}", backend_log_path));
     
     // Create fresh log files
-    let stdout_file = File::create(&backend_log_path)
-        .map_err(|e| {
-            let err_msg = format!("Failed to create backend.log: {}", e);
-            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-            err_msg
-        })?;
+    let stdout_file = match File::create(&backend_log_path) {
+        Ok(file) => file,
+        Err(e) => {
+            let err_msg = format!("Failed to create backend.log:\n{}\n\nLogs location: {:?}", e, logs_dir);
+            log_to_file(&logs_dir, "tauri_startup.log", &format!("Failed to create backend.log: {}", e));
+            show_error_dialog(&app, "Log File Error", &err_msg);
+            return Err(format!("Failed to create backend.log: {}", e));
+        }
+    };
     
-    let stderr_file = File::create(&backend_err_path)
-        .map_err(|e| {
-            let err_msg = format!("Failed to create backend_error.log: {}", e);
-            log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-            err_msg
-        })?;
+    let stderr_file = match File::create(&backend_err_path) {
+        Ok(file) => file,
+        Err(e) => {
+            let err_msg = format!("Failed to create backend_error.log:\n{}\n\nLogs location: {:?}", e, logs_dir);
+            log_to_file(&logs_dir, "tauri_startup.log", &format!("Failed to create backend_error.log: {}", e));
+            show_error_dialog(&app, "Log File Error", &err_msg);
+            return Err(format!("Failed to create backend_error.log: {}", e));
+        }
+    };
     
     log_to_file(&logs_dir, "tauri_startup.log", "Log files created, spawning process...");
     
+    // Spawn the backend process
+    let spawn_result;
+    
     #[cfg(target_os = "windows")]
     {
-        Command::new(&backend_path)
+        spawn_result = Command::new(&backend_path)
             .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
             .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
-            .spawn()
-            .map_err(|e| {
-                let err_msg = format!("Failed to spawn backend.exe: {}\nPath: {:?}", e, backend_path);
-                log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-                err_msg
-            })?;
+            .spawn();
     }
     
     #[cfg(target_os = "linux")]
@@ -124,20 +167,35 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
         
         log_to_file(&logs_dir, "tauri_startup.log", "Made backend executable (chmod +x)");
         
-        Command::new(path_str)
+        spawn_result = Command::new(path_str)
             .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
             .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
-            .spawn()
-            .map_err(|e| {
-                let err_msg = format!("Failed to spawn backend: {}\nPath: {}", e, path_str);
-                log_to_file(&logs_dir, "tauri_startup.log", &err_msg);
-                err_msg
-            })?;
+            .spawn();
     }
     
-    log_to_file(&logs_dir, "tauri_startup.log", "Process spawned successfully, waiting 3 seconds...");
+    match spawn_result {
+        Ok(_) => {
+            log_to_file(&logs_dir, "tauri_startup.log", "Process spawned successfully");
+            
+            // Show success info
+            let success_msg = format!(
+                "Backend process started successfully!\n\nBackend path: {:?}\nLogs location: {:?}\n\nWaiting 3 seconds for initialization...",
+                backend_path, logs_dir
+            );
+            show_info_dialog(&app, "Backend Starting", &success_msg);
+        }
+        Err(e) => {
+            let err_msg = format!(
+                "Failed to spawn backend process:\n{}\n\nBackend path: {:?}\nLogs location: {:?}\n\nCheck backend_error.log for details.",
+                e, backend_path, logs_dir
+            );
+            log_to_file(&logs_dir, "tauri_startup.log", &format!("Failed to spawn: {}", e));
+            show_error_dialog(&app, "Backend Spawn Failed", &err_msg);
+            return Err(format!("Failed to spawn backend: {}", e));
+        }
+    }
     
     // Wait for backend to start
     thread::sleep(Duration::from_secs(3));
@@ -154,6 +212,7 @@ fn exit_app() {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![start_backend, exit_app])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
