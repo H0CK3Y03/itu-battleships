@@ -197,8 +197,6 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
         }
     }
     
-    log_to_file(&logs_dir, "tauri_startup.log", "Startup complete");
-    
     // Wait for backend to start
     thread::sleep(Duration::from_secs(3));
     
