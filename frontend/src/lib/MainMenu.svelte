@@ -32,12 +32,17 @@
   
   const handleExit = async () => {
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().close();
+      // Check if running in Tauri environment
+      if (window.__TAURI__) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('exit_app');
+      } else {
+        // Fallback for browser mode (development)
+        window.close();
+      }
     } catch (error) {
       console.error('Failed to exit:', error);
-      // Fallback for non-Tauri environment
-      window.close();
+      alert('Failed to exit the application. Please close the window manually.');
     }
   };
 </script>

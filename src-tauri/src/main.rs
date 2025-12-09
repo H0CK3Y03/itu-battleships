@@ -76,9 +76,14 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     Ok(format!("Backend started from: {:?}\nLogs: {:?}", backend_path, log_path))
 }
 
+#[tauri::command]
+fn exit_app() {
+    std::process::exit(0);
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![start_backend])
+        .invoke_handler(tauri::generate_handler![start_backend, exit_app])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
 }
