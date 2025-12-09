@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import Grid from './Grid.svelte';
   import ShipInventory from './ShipInventory.svelte';
   import Button from './Button.svelte';
@@ -33,7 +33,32 @@
     } finally {
       loading = false;
     }
+    
+    // Add keyboard event listeners
+    window.addEventListener('keydown', handleKeyDown);
   });
+  
+  onDestroy(() => {
+    // Remove keyboard event listeners
+    window.removeEventListener('keydown', handleKeyDown);
+  });
+  
+  const handleKeyDown = async (event: KeyboardEvent) => {
+    // R key for rotate
+    if (event.key === 'r' || event.key === 'R') {
+      event.preventDefault();
+      if ($activeShip) {
+        await handleCellRightClick(0, 0); // Trigger rotation
+      }
+    }
+    // Delete key for remove ship
+    else if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault();
+      if ($activeShip) {
+        await handleUndo();
+      }
+    }
+  };
   
   const handleCellClick = async (row: number, col: number) => {
     try {
