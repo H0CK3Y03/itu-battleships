@@ -7,17 +7,23 @@ import { IPlanningData, IPlacedShip, IShip } from './data_interfaces';
 const app = express();
 const PORT = 5000;
 
-// Determine if we're running from bundled exe or dev environment
-// When bundled with pkg, process.pkg is defined
-const isPackaged = (process as any).pkg !== undefined || (!__dirname.includes('node_modules') && !__dirname.includes('src'));
+// Get directories from environment variables set by Tauri
+const TAURI_RESOURCE_DIR = process.env.TAURI_RESOURCE_DIR;
+const TAURI_APP_DATA_DIR = process.env.TAURI_APP_DATA_DIR;
+
+// Determine if we're running from bundled exe
+const isPackaged = (process as any).pkg !== undefined || TAURI_RESOURCE_DIR !== undefined;
 
 // Get the base directory for data files
 const getDataDir = () => {
-  if (isPackaged) {
-    // When bundled, data files are in resources folder
+  if (isPackaged && TAURI_APP_DATA_DIR) {
+    // When bundled with Tauri, use app data directory (writable)
+    return path.join(TAURI_APP_DATA_DIR, 'data');
+  } else if (isPackaged) {
+    // Fallback for other packaged scenarios
     return path.join(process.cwd(), 'data');
   } else {
-    // In development, use the standard path
+    // In development
     return path.join(__dirname, '..', 'data');
   }
 };
@@ -27,6 +33,71 @@ const dataDir = getDataDir();
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Initialize data files from bundled resources if they don't exist
+const initializeDataFiles = () => {
+  const dataFiles = [
+    'game_settings.json',
+    'curr_screen.json',
+    'player_grid.json',
+    'pc_grid.json',
+    'planning.json'
+  ];
+
+  dataFiles.forEach(file => {
+    const targetPath = path.join(dataDir, file);
+    
+    if (!fs.existsSync(targetPath)) {
+      console.log(`Initializing ${file}...`);
+      
+      // Try to copy from bundled resources
+      if (TAURI_RESOURCE_DIR) {
+        const sourcePath = path.join(TAURI_RESOURCE_DIR, 'data', file);
+        if (fs.existsSync(sourcePath)) {
+          fs.copyFileSync(sourcePath, targetPath);
+          console.log(`Copied ${file} from resources`);
+          return;
+        }
+      }
+      
+      // Create default file if can't copy from resources
+      const defaults: Record<string, any> = {
+        'game_settings.json': { selectedBoard: '10x10' },
+        'curr_screen.json': { current_screen: 'menu' },
+        'player_grid.json': { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
+        'pc_grid.json': { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
+        'planning.json': {
+          player_grid: { gridSize: 10, tiles: Array(10).fill(null).map(() => Array(10).fill('empty')) },
+          all_ships: null,
+          available_ships: null,
+          placed_ships: null,
+          active_ship: null
+        }
+      };
+      
+      if (defaults[file]) {
+        fs.writeFileSync(targetPath, JSON.stringify(defaults[file], null, 2));
+        console.log(`Created default ${file}`);
+      }
+    }
+  });
+};
+
+// Initialize data files before starting server
+console.log('='.repeat(50));
+console.log('Battleships Backend Starting...');
+console.log('Environment:', isPackaged ? 'PACKAGED' : 'DEVELOPMENT');
+console.log('TAURI_RESOURCE_DIR:', TAURI_RESOURCE_DIR || 'not set');
+console.log('TAURI_APP_DATA_DIR:', TAURI_APP_DATA_DIR || 'not set');
+console.log('Data directory:', dataDir);
+console.log('='.repeat(50));
+
+try {
+  initializeDataFiles();
+  console.log('Data files initialized successfully');
+} catch (error) {
+  console.error('Error initializing data files:', error);
 }
 
 // path for json for settings
