@@ -112,8 +112,8 @@
       "color": "purple",
       "rotation": 0,
       "name": "ship1",
-      "row": 0,
-      "col": 0
+      "row": 4,
+      "col": 2
     },
     {
       "id": 2,
@@ -121,8 +121,8 @@
       "color": "orange",
       "rotation": 0,
       "name": "ship2",
-      "row": 1,
-      "col": 0
+      "row": 2,
+      "col": 3
     },
     {
       "id": 3,
@@ -130,8 +130,8 @@
       "color": "green",
       "rotation": 0,
       "name": "ship3",
-      "row": 2,
-      "col": 0
+      "row": 5,
+      "col": 6
     },
     {
       "id": 4,
@@ -140,7 +140,7 @@
       "rotation": 0,
       "name": "ship4",
       "row": 4,
-      "col": 0
+      "col": 6
     },
     {
       "id": 5,
@@ -148,8 +148,8 @@
       "color": "grey",
       "rotation": 0,
       "name": "ship5",
-      "row": 5,
-      "col": 0
+      "row": 1,
+      "col": 6
     }
   ],
   "active_ship": null
