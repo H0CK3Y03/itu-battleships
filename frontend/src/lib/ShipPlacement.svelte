@@ -16,7 +16,6 @@
   import type { IShip } from '../types/interfaces';
   
   let loading = false;
-  let selectedShipFromInventory: IShip | null = null;
   
   onMount(async () => {
     loading = true;
@@ -41,17 +40,20 @@
       const currentGrid = $playerGrid;
       const cellValue = currentGrid.tiles[row][col];
       
-      // If clicking on empty cell and we have a selected ship from inventory
-      if (cellValue === 'empty' && selectedShipFromInventory) {
-        // Try to place the ship
-        await planningApi.placeShip(selectedShipFromInventory, row, col);
-        selectedShipFromInventory = null;
-        
-        // Refresh data
-        const data = await planningApi.getPlanningData();
-        playerGrid.set(data.player_grid);
-        availableShips.set(data.available_ships);
-        placedShips.set(data.placed_ships);
+      // If clicking on empty cell
+      if (cellValue === 'empty') {
+        // If we have available ships, place the first one
+        if ($availableShips && $availableShips.length > 0) {
+          const shipToPlace = $availableShips[0];
+          await planningApi.placeShip(shipToPlace, row, col);
+          
+          // Refresh data
+          const data = await planningApi.getPlanningData();
+          playerGrid.set(data.player_grid);
+          availableShips.set(data.available_ships);
+          placedShips.set(data.placed_ships);
+          activeShip.set(data.active_ship);
+        }
       } else if (cellValue !== 'empty') {
         // Clicking on a placed ship - select/deselect it
         await planningApi.handleActiveShip(row, col);
@@ -59,6 +61,7 @@
         // Refresh data
         const data = await planningApi.getPlanningData();
         activeShip.set(data.active_ship);
+        playerGrid.set(data.player_grid);
       }
     } catch (error) {
       console.error('Failed to handle cell click:', error);
@@ -142,10 +145,6 @@
       console.error('Failed to go back:', error);
     }
   };
-  
-  const handleShipSelect = (ship: IShip) => {
-    selectedShipFromInventory = ship;
-  };
 </script>
 
 <div class="ship-placement">
@@ -168,10 +167,7 @@
     </div>
     
     <div class="inventory-section">
-      <ShipInventory 
-        ships={$availableShips}
-        onShipSelect={handleShipSelect}
-      />
+      <ShipInventory ships={$availableShips} />
     </div>
   </div>
   

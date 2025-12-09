@@ -2,13 +2,6 @@
   import type { IShip } from '../types/interfaces';
   
   export let ships: IShip[] | null;
-  export let onShipSelect: ((ship: IShip) => void) | undefined = undefined;
-  
-  const handleShipClick = (ship: IShip) => {
-    if (onShipSelect) {
-      onShipSelect(ship);
-    }
-  };
   
   const groupShipsBySize = (ships: IShip[] | null): Map<number, IShip[]> => {
     const grouped = new Map<number, IShip[]>();
