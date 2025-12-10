@@ -68,7 +68,13 @@ const initializeDataFiles = () => {
                 'pc_grid.json': { gridSize: DEFAULT_GRID_SIZE, tiles: Array(DEFAULT_GRID_SIZE).fill(null).map(() => Array(DEFAULT_GRID_SIZE).fill('empty')) },
                 'planning.json': {
                     player_grid: { gridSize: DEFAULT_GRID_SIZE, tiles: Array(DEFAULT_GRID_SIZE).fill(null).map(() => Array(DEFAULT_GRID_SIZE).fill('empty')) },
-                    all_ships: null,
+                    all_ships: [
+                        { id: "1", size: 2, color: "purple", rotation: 0, name: "ship1" },
+                        { id: "2", size: 2, color: "orange", rotation: 0, name: "ship2" },
+                        { id: "3", size: 3, color: "green", rotation: 0, name: "ship3" },
+                        { id: "4", size: 3, color: "blue", rotation: 0, name: "ship4" },
+                        { id: "5", size: 4, color: "grey", rotation: 0, name: "ship5" }
+                    ],
                     available_ships: null,
                     placed_ships: null,
                     active_ship: null
@@ -261,6 +267,16 @@ app.post('/api/set-available-ships', (req, res) => {
             console.error("Error parsing planning data:", parseError);
             return res.status(500).json({ error: "Invalid planning data format" });
         }
+        // Initialize all_ships if it's null
+        if (!planningData.all_ships || planningData.all_ships.length === 0) {
+            planningData.all_ships = [
+                { id: "1", size: 2, color: "purple", rotation: 0, name: "ship1" },
+                { id: "2", size: 2, color: "orange", rotation: 0, name: "ship2" },
+                { id: "3", size: 3, color: "green", rotation: 0, name: "ship3" },
+                { id: "4", size: 3, color: "blue", rotation: 0, name: "ship4" },
+                { id: "5", size: 4, color: "grey", rotation: 0, name: "ship5" }
+            ];
+        }
         planningData.available_ships = [];
         planningData.all_ships?.forEach((ship) => {
             const newAvailableShip = {
@@ -274,10 +290,10 @@ app.post('/api/set-available-ships', (req, res) => {
         });
         fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
             if (writeErr) {
-                console.error("Error removing active ship:", writeErr);
-                return res.status(500).json({ error: "Could not remove active ship" });
+                console.error("Error setting available ships:", writeErr);
+                return res.status(500).json({ error: "Could not set available ships" });
             }
-            res.status(200).json({ message: "Active ship removed successfully" });
+            res.status(200).json({ message: "Available ships set successfully" });
         });
     });
 });
