@@ -146,11 +146,16 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     
     #[cfg(target_os = "windows")]
     {
+        // Hide the console window (terminal) when backend is spawned
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
         spawn_result = Command::new(&backend_path)
             .env("TAURI_RESOURCE_DIR", resource_dir.to_string_lossy().to_string())
             .env("TAURI_LOGS_DIR", logs_dir.to_string_lossy().to_string())
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn();
     }
     
