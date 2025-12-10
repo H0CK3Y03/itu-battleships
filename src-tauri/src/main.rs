@@ -2,13 +2,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{AppHandle, Manager};
-use std::process::{Command, Stdio};
+use std::process::{Command, Stdio, Child};
 use std::time::Duration;
 use std::thread;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+
+// Global state to store the backend process handle
+struct BackendProcess(Mutex<Option<Child>>);
 
 fn get_logs_dir() -> Result<PathBuf, String> {
     // Get the directory where the exe is running
@@ -181,8 +185,13 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
     }
     
     match spawn_result {
-        Ok(_) => {
+        Ok(child) => {
             log_to_file(&logs_dir, "tauri_startup.log", "Process spawned successfully");
+            
+            // Store the process handle in the app state
+            let backend_process: tauri::State<BackendProcess> = app.state();
+            let mut process = backend_process.0.lock().unwrap();
+            *process = Some(child);
             
             // Show success info in a windows dialog
             // let success_msg = format!(
@@ -212,12 +221,22 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn exit_app(app: tauri::AppHandle) {
+    // Kill the backend process before exiting
+    let backend_process: tauri::State<BackendProcess> = app.state();
+    let mut process = backend_process.0.lock().unwrap();
+    
+    if let Some(mut child) = process.take() {
+        let _ = child.kill();
+        let _ = child.wait(); // Wait for the process to fully terminate
+    }
+    
     app.exit(0);
 }
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(BackendProcess(Mutex::new(None)))
         // auto-start backend when Tauri is setting up
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -226,6 +245,19 @@ fn main() {
             });
 
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                // Kill backend process when window is closed
+                let app = window.app_handle();
+                let backend_process: tauri::State<BackendProcess> = app.state();
+                let mut process = backend_process.0.lock().unwrap();
+                
+                if let Some(mut child) = process.take() {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![start_backend, exit_app])
         .run(tauri::generate_context!())
