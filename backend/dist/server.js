@@ -525,7 +525,7 @@ app.post('/api/planning/remove-active-ship', (req, res) => {
             return res.status(500).json({ error: "Invalid planning data format" });
         }
         if (planningData.active_ship === null) {
-            return false;
+            return res.status(400).json({ error: "No active ship to remove" });
         }
         // Remove active ship grid
         if (planningData.active_ship !== null) {
@@ -701,6 +701,51 @@ app.post('/api/planning/restore-available-ships', (req, res) => {
                 return res.status(500).json({ error: "Could not rotate active ship" });
             }
             res.status(200).json({ message: "Available ships restored successfully" });
+        });
+    });
+});
+// Endpoint to reset planning data (clear grid and restore all ships)
+app.post('/api/planning/reset', (req, res) => {
+    fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error("Error reading planning data:", err);
+            return res.status(500).json({ error: "Could not read planning data" });
+        }
+        let planningData;
+        try {
+            planningData = JSON.parse(data);
+        }
+        catch (parseError) {
+            console.error("Error parsing planning data:", parseError);
+            return res.status(500).json({ error: "Invalid planning data format" });
+        }
+        // Clear the grid
+        for (let i = 0; i < planningData.player_grid.tiles.length; i++) {
+            for (let j = 0; j < planningData.player_grid.tiles[i].length; j++) {
+                planningData.player_grid.tiles[i][j] = "empty";
+            }
+        }
+        // Restore all ships to available_ships from all_ships
+        planningData.available_ships = [];
+        planningData.all_ships?.forEach((ship) => {
+            const availableShip = {
+                id: ship.id,
+                size: ship.size,
+                color: ship.color,
+                rotation: 0,
+                name: ship.name
+            };
+            planningData.available_ships?.push(availableShip);
+        });
+        // Clear placed ships and active ship
+        planningData.placed_ships = null;
+        planningData.active_ship = null;
+        fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
+            if (writeErr) {
+                console.error("Error resetting planning data:", writeErr);
+                return res.status(500).json({ error: "Could not reset planning data" });
+            }
+            res.status(200).json({ message: "Planning data reset successfully" });
         });
     });
 });

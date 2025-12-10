@@ -74,6 +74,10 @@ export const planningApi = {
     fetchApi<{ message: string }>('/set-available-ships', {
       method: 'POST',
     }),
+  resetPlanning: () =>
+    fetchApi<{ message: string }>('/planning/reset', {
+      method: 'POST',
+    }),
 };
 
 // Grids
