@@ -339,8 +339,8 @@ app.post('/api/set-available-ships', (req: Request, res: Response) => {
 
     fs.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
       if (writeErr) {
-        console.error("Error removing active ship:", writeErr);
-        return res.status(500).json({ error: "Could not remove active ship" });
+        console.error("Error setting available ships:", writeErr);
+        return res.status(500).json({ error: "Could not set available ships" });
       }
       res.status(200).json({ message: "Available ships set successfully" });
     });
