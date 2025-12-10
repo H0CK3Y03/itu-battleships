@@ -1,7 +1,18 @@
 <script lang="ts">
   import type { IShip } from '../types/interfaces';
+  import { selectedInventoryShip } from '../stores/gameStore';
   
   export let ships: IShip[] | null;
+  
+  const handleShipClick = (ship: IShip) => {
+    // Toggle selection
+    selectedInventoryShip.update(current => {
+      if (current?.id === ship.id) {
+        return null; // Deselect if clicking same ship
+      }
+      return ship;
+    });
+  };
   
   const groupShipsBySize = (ships: IShip[] | null): Map<number, IShip[]> => {
     const grouped = new Map<number, IShip[]>();
@@ -25,7 +36,14 @@
   <div class="ships-container">
     {#if ships && ships.length > 0}
       {#each sortedSizes as size}
-        <div class="ship-group">
+        <div 
+          class="ship-group"
+          class:selected={groupedShips.get(size)?.some(s => s.id === $selectedInventoryShip?.id)}
+          on:click={() => groupedShips.get(size)?.[0] && handleShipClick(groupedShips.get(size)![0])}
+          on:keydown={(e) => e.key === 'Enter' && groupedShips.get(size)?.[0] && handleShipClick(groupedShips.get(size)![0])}
+          role="button"
+          tabindex="0"
+        >
           <span class="ship-count">{groupedShips.get(size)?.length}×</span>
           <div class="ship-preview">
             {#each Array(size) as _, i}
@@ -66,6 +84,21 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+  }
+
+  .ship-group:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .ship-group.selected {
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.1);
   }
 
   .ship-count {

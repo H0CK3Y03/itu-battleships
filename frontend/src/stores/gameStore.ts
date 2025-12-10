@@ -12,6 +12,7 @@ export const playerGrid = writable<IGrid>({ gridSize: 10, tiles: [] });
 export const availableShips = writable<IShip[] | null>(null);
 export const placedShips = writable<IPlacedShip[] | null>(null);
 export const activeShip = writable<IPlacedShip | null>(null);
+export const selectedInventoryShip = writable<IShip | null>(null);
 export const shipColors = writable<Record<string, string>>({});
 
 // Game state

@@ -660,6 +660,104 @@ app.post('/api/planning/rotate-active-ship', (req, res) => {
         });
     });
 });
+// Endpoint to move active ship to new position
+app.post('/api/planning/move-active-ship', (req, res) => {
+    const { row, col } = req.body;
+    fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error("Error reading planning data:", err);
+            return res.status(500).json({ error: "Could not read planning data" });
+        }
+        let planningData;
+        try {
+            planningData = JSON.parse(data);
+        }
+        catch (parseError) {
+            console.error("Error parsing planning data:", parseError);
+            return res.status(500).json({ error: "Invalid planning data format" });
+        }
+        if (!planningData.active_ship) {
+            return res.status(400).json({ error: "No active ship to move" });
+        }
+        const ship = planningData.active_ship;
+        // Check if new position is valid
+        let canBePlaced = true;
+        // Check bounds
+        if (ship.rotation === 0) {
+            // Horizontal
+            if (col + ship.size > planningData.player_grid.gridSize) {
+                return res.status(400).json({ error: "Ship would exceed grid boundaries" });
+            }
+            // Check for collisions (ignore cells with the ship's own name)
+            for (let i = col; i < col + ship.size; i++) {
+                const cellValue = planningData.player_grid.tiles[row][i];
+                if (cellValue !== "empty" && cellValue !== ship.name) {
+                    canBePlaced = false;
+                    break;
+                }
+            }
+        }
+        else {
+            // Vertical
+            if (row + ship.size > planningData.player_grid.gridSize) {
+                return res.status(400).json({ error: "Ship would exceed grid boundaries" });
+            }
+            // Check for collisions (ignore cells with the ship's own name)
+            for (let i = row; i < row + ship.size; i++) {
+                const cellValue = planningData.player_grid.tiles[i][col];
+                if (cellValue !== "empty" && cellValue !== ship.name) {
+                    canBePlaced = false;
+                    break;
+                }
+            }
+        }
+        if (!canBePlaced) {
+            return res.status(400).json({ error: "Cannot move ship - would collide with another ship" });
+        }
+        // Remove ship from old position
+        if (ship.rotation === 0) {
+            for (let j = ship.col; j < ship.col + ship.size; j++) {
+                planningData.player_grid.tiles[ship.row][j] = "empty";
+            }
+        }
+        else {
+            for (let i = ship.row; i < ship.row + ship.size; i++) {
+                planningData.player_grid.tiles[i][ship.col] = "empty";
+            }
+        }
+        // Place ship at new position
+        if (ship.rotation === 0) {
+            for (let i = col; i < col + ship.size; i++) {
+                planningData.player_grid.tiles[row][i] = ship.name;
+            }
+        }
+        else {
+            for (let i = row; i < row + ship.size; i++) {
+                planningData.player_grid.tiles[i][col] = ship.name;
+            }
+        }
+        // Update ship position in active_ship
+        planningData.active_ship.row = row;
+        planningData.active_ship.col = col;
+        // Update ship position in placed_ships
+        if (planningData.placed_ships !== null) {
+            for (let i = 0; i < planningData.placed_ships.length; i++) {
+                if (planningData.placed_ships[i].name === ship.name) {
+                    planningData.placed_ships[i].row = row;
+                    planningData.placed_ships[i].col = col;
+                    break;
+                }
+            }
+        }
+        fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
+            if (writeErr) {
+                console.error("Error moving active ship:", writeErr);
+                return res.status(500).json({ error: "Could not move active ship" });
+            }
+            res.status(200).json({ message: "Active ship moved successfully", active_ship: planningData.active_ship });
+        });
+    });
+});
 // Endpoint to get colors from available ships
 app.get('/api/planning/colors', (req, res) => {
     fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
