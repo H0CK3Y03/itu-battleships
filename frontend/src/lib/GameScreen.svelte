@@ -16,13 +16,16 @@
     try {
       const playerGridData = await gridApi.getPlayerGrid();
       playerGrid.set(playerGridData);
+      console.log('GameScreen - playerGrid loaded:', playerGridData);
       
       const pcGridData = await gridApi.getPcGrid();
       opponentGrid.set(pcGridData);
       
       // Load ship colors
       const colors = await planningApi.getColors();
+      console.log('GameScreen - colors loaded:', colors);
       shipColors.set(colors);
+      console.log('GameScreen - shipColors store updated');
     } catch (error) {
       console.error('Failed to load game data:', error);
     } finally {
