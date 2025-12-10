@@ -18,6 +18,10 @@
   export let previewRotation: number = 0;
   export let previewValid: boolean = true;
   
+  // Constants for rotation values
+  const HORIZONTAL = 0;
+  const VERTICAL = 90;
+  
   // Debug logging whenever colors prop changes
   $: {
     console.log('Grid - colors prop updated:', colors);
@@ -67,7 +71,7 @@
     
     const size = previewShip.size;
     
-    if (previewRotation === 0) {
+    if (previewRotation === HORIZONTAL) {
       // Horizontal preview
       return rowIndex === previewRow && colIndex >= previewCol && colIndex < previewCol + size;
     } else {

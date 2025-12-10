@@ -20,10 +20,14 @@
   let loading = false;
   let showCloseDialog = false;
   
+  // Constants for rotation values
+  const HORIZONTAL = 0;
+  const VERTICAL = 90;
+  
   // Preview state
   let previewRow: number | null = null;
   let previewCol: number | null = null;
-  let previewRotation: number = 0;
+  let previewRotation: number = HORIZONTAL;
   let previewValid: boolean = true;
   
   onMount(async () => {
@@ -106,7 +110,7 @@
     const size = ship.size;
     
     // Check bounds
-    if (rotation === 0) {
+    if (rotation === HORIZONTAL) {
       // Horizontal
       if (col + size > grid.gridSize) return false;
       
@@ -163,10 +167,11 @@
     if (event.key === 'r' || event.key === 'R') {
       event.preventDefault();
       if ($activeShip) {
-        await handleCellRightClick(0, 0); // Trigger rotation
+        // Rotate the active placed ship
+        await handleCellRightClick(0, 0);
       } else {
         // Toggle preview rotation when no active ship
-        previewRotation = previewRotation === 0 ? 90 : 0;
+        previewRotation = previewRotation === HORIZONTAL ? VERTICAL : HORIZONTAL;
         
         // Revalidate preview if hovering
         if (previewRow !== null && previewCol !== null) {
@@ -213,13 +218,19 @@
           // Use selected ship from inventory, or first available ship
           const shipToPlace = $selectedInventoryShip || $availableShips[0];
           
-          // Apply preview rotation to ship before placing
-          const shipWithRotation = { ...shipToPlace, rotation: previewRotation };
+          // Create a new ship object with preview rotation applied
+          const shipWithRotation: IShip = {
+            id: shipToPlace.id,
+            size: shipToPlace.size,
+            color: shipToPlace.color,
+            rotation: previewRotation,
+            name: shipToPlace.name
+          };
           
           await planningApi.placeShip(shipWithRotation, row, col);
           
           // Reset preview rotation after placing
-          previewRotation = 0;
+          previewRotation = HORIZONTAL;
           
           // Clear selected inventory ship after placing
           selectedInventoryShip.set(null);
@@ -236,7 +247,7 @@
         await planningApi.handleActiveShip(row, col);
         
         // Reset preview rotation when selecting a ship
-        previewRotation = 0;
+        previewRotation = HORIZONTAL;
         
         // Clear inventory selection when selecting a placed ship
         selectedInventoryShip.set(null);
