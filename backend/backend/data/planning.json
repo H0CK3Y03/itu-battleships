@@ -45,31 +45,19 @@
         "empty",
         "empty",
         "empty",
-        "empty",
-        "miss",
-        "empty",
-        "empty"
-      ],
-      [
-        "ship5",
-        "ship5",
-        "ship5",
-        "ship5",
-        "empty",
-        "empty",
-        "empty",
-        "empty",
-        "empty",
-        "empty"
-      ],
-      [
-        "empty",
-        "empty",
-        "empty",
-        "empty",
         "miss",
         "empty",
         "empty",
+        "empty"
+      ],
+      [
+        "ship5",
+        "ship5",
+        "ship5",
+        "ship5",
+        "empty",
+        "empty",
+        "empty",
         "empty",
         "empty",
         "empty"
@@ -96,13 +84,25 @@
         "empty",
         "empty",
         "empty",
-        "miss"
+        "empty"
       ],
       [
         "empty",
         "empty",
         "empty",
         "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      [
+        "empty",
+        "empty",
+        "empty",
+        "miss",
         "empty",
         "empty",
         "empty",
