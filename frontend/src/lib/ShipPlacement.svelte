@@ -197,6 +197,8 @@
   
   const handleClose = async () => {
     try {
+      // Reset planning data before going back to menu
+      await planningApi.resetPlanning();
       await screenApi.updateScreen('menu');
       currentScreen.set('menu');
     } catch (error) {

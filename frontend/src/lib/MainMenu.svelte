@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Button from './Button.svelte';
-  import { settingsApi, screenApi } from '../services/api';
+  import { settingsApi, screenApi, planningApi } from '../services/api';
   import { boardSize, currentScreen } from '../stores/gameStore';
   import { invoke } from '@tauri-apps/api/core';
   
@@ -10,6 +10,9 @@
   
   onMount(async () => {
     try {
+      // Reset planning data on app start
+      await planningApi.resetPlanning();
+      
       const settings = await settingsApi.getSettings();
       selectedSize = settings.selectedBoard;
       boardSize.set(selectedSize);
