@@ -367,10 +367,22 @@ app.post('/api/planning/placed-ships', (req, res) => {
             if (col + newPlacingShip.size > planningData.player_grid.gridSize) {
                 return res.status(400).json({ error: "Ship placement exceeds grid boundaries" });
             }
+            // Check for collisions with existing ships
+            for (let i = col; i < col + newPlacingShip.size; i++) {
+                if (planningData.player_grid.tiles[row][i] !== "empty") {
+                    return res.status(400).json({ error: "Ship placement overlaps with existing ship" });
+                }
+            }
         }
         else {
             if (row + newPlacingShip.size > planningData.player_grid.gridSize) {
                 return res.status(400).json({ error: "Ship placement exceeds grid boundaries" });
+            }
+            // Check for collisions with existing ships
+            for (let i = row; i < row + newPlacingShip.size; i++) {
+                if (planningData.player_grid.tiles[i][col] !== "empty") {
+                    return res.status(400).json({ error: "Ship placement overlaps with existing ship" });
+                }
             }
         }
         // Update the grid tiles with the ship name
