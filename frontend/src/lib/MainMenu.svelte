@@ -3,6 +3,7 @@
   import Button from './Button.svelte';
   import { settingsApi, screenApi } from '../services/api';
   import { boardSize, currentScreen } from '../stores/gameStore';
+  import { invoke } from '@tauri-apps/api/core';
   
   let selectedSize = '10x10';
   let loading = false;
@@ -32,19 +33,18 @@
   
   const handleExit = async () => {
     try {
-      // Check if running in Tauri environment
-      if (window.__TAURI__) {
-        const { invoke } = await import('@tauri-apps/api/core');
+      // If Tauri APIs exist, use them; else fallback
+      const isTauri = '__TAURI_INTERNALS__' in window || '__TAURI_METADATA__' in window;
+
+      if (isTauri) {
         await invoke('exit_app');
       } else {
-        // Fallback for browser mode (development)
         window.close();
       }
     } catch (error) {
       console.error('Failed to exit:', error);
-      alert('Failed to exit the application. Please close the window manually.');
     }
-  };
+};
 </script>
 
 <div class="main-menu">

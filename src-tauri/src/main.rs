@@ -184,12 +184,12 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
         Ok(_) => {
             log_to_file(&logs_dir, "tauri_startup.log", "Process spawned successfully");
             
-            // Show success info
-            let success_msg = format!(
-                "Backend process started successfully!\n\nBackend path: {:?}\nLogs location: {:?}\n\nWaiting 3 seconds for initialization...",
-                backend_path, logs_dir
-            );
-            show_info_dialog(&app, "Backend Starting", &success_msg);
+            // Show success info in a windows dialog
+            // let success_msg = format!(
+            //     "Backend process started successfully!\n\nBackend path: {:?}\nLogs location: {:?}\n\nWaiting 3 seconds for initialization...",
+            //     backend_path, logs_dir
+            // );
+            // show_info_dialog(&app, "Backend Starting", &success_msg);
         }
         Err(e) => {
             let err_msg = format!(
@@ -211,8 +211,8 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn exit_app() {
-    std::process::exit(0);
+fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
 }
 
 fn main() {
@@ -222,7 +222,6 @@ fn main() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                // Optionally ignore or log the result
                 let _ = start_backend(app_handle).await;
             });
 
