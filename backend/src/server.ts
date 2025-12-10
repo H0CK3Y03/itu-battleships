@@ -417,14 +417,7 @@ app.post('/api/planning/placed-ships', (req: Request, res: Response) => {
       col: col
     }
 
-    planningData.placed_ships.push(newPlacingShip);
-
-    // get and remove ship from available ships
-    if (planningData.available_ships) {
-      planningData.available_ships = planningData.available_ships.filter((s) => s.id !== ship.id);
-    }
-
-    // Validate bounds before updating grid
+    // Validate bounds before modifying state
     if (newPlacingShip.rotation === 0) {
       if (col + newPlacingShip.size > planningData.player_grid.gridSize) {
         return res.status(400).json({ error: "Ship placement exceeds grid boundaries" });
@@ -445,6 +438,13 @@ app.post('/api/planning/placed-ships', (req: Request, res: Response) => {
           return res.status(400).json({ error: "Ship placement overlaps with existing ship" });
         }
       }
+    }
+
+    planningData.placed_ships.push(newPlacingShip);
+
+    // get and remove ship from available ships
+    if (planningData.available_ships) {
+      planningData.available_ships = planningData.available_ships.filter((s) => s.id !== ship.id);
     }
 
     // Update the grid tiles with the ship name
