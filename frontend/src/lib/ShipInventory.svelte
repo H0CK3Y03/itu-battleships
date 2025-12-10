@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { IShip } from '../types/interfaces';
-  import { selectedInventoryShip } from '../stores/gameStore';
+  import { selectedInventoryShip, activeShip } from '../stores/gameStore';
   
   export let ships: IShip[] | null;
   
   const handleShipClick = (ship: IShip) => {
+    // Clear any active placed ship when selecting from inventory
+    activeShip.set(null);
+    
     // Toggle selection
     selectedInventoryShip.update(current => {
       if (current?.id === ship.id) {
