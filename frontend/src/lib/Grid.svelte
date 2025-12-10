@@ -28,7 +28,7 @@
     return colors[cellValue] || '#2C3E50';
   };
   
-  $: getCellStatus = (cellValue: string): string => {
+  const getCellStatus = (cellValue: string): string => {
     if (cellValue === 'hit') return 'hit';
     if (cellValue === 'miss') return 'miss';
     return '';
