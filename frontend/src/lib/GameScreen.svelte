@@ -4,7 +4,7 @@
   import Button from './Button.svelte';
   import SurrenderDialog from './SurrenderDialog.svelte';
   import DefeatScreen from './DefeatScreen.svelte';
-  import { gridApi, screenApi } from '../services/api';
+  import { gridApi, screenApi, planningApi } from '../services/api';
   import { playerGrid, opponentGrid, shipColors, currentScreen } from '../stores/gameStore';
   
   let loading = false;
@@ -19,6 +19,10 @@
       
       const pcGridData = await gridApi.getPcGrid();
       opponentGrid.set(pcGridData);
+      
+      // Load ship colors
+      const colors = await planningApi.getColors();
+      shipColors.set(colors);
     } catch (error) {
       console.error('Failed to load game data:', error);
     } finally {
