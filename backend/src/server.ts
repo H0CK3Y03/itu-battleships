@@ -871,7 +871,7 @@ function canPlaceShip(
     for (let i = col; i < col + size; i++) {
       if (grid[row][i] !== 'empty') return false;
     }
-  } else {
+  } else if (rotation === 90) {
     // Vertical
     if (row + size > gridSize) return false;
     for (let i = row; i < row + size; i++) {
@@ -895,7 +895,7 @@ function placeShipOnGrid(
     for (let i = col; i < col + size; i++) {
       grid[row][i] = shipName;
     }
-  } else {
+  } else if (rotation === 90) {
     // Vertical
     for (let i = row; i < row + size; i++) {
       grid[i][col] = shipName;

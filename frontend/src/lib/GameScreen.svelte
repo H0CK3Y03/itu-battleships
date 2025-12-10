@@ -8,6 +8,8 @@
   import { gridApi, screenApi, planningApi, gameApi } from '../services/api';
   import { playerGrid, opponentGrid, shipColors, currentScreen } from '../stores/gameStore';
   
+  const AI_ATTACK_DELAY_MS = 500; // Delay before AI counter-attack
+  
   let loading = false;
   let showSurrenderDialog = false;
   let showDefeatScreen = false;
@@ -73,7 +75,7 @@
       }
       
       // AI counter-attacks
-      await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay
+      await new Promise(resolve => setTimeout(resolve, AI_ATTACK_DELAY_MS));
       const aiResult = await gameApi.aiAttack();
       console.log('AI attack result:', aiResult);
       

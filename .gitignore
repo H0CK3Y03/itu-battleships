@@ -23,3 +23,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Game state files (generated at runtime)
+/backend/backend/data/game_state.json
+/backend/backend/data/pc_ships.json
