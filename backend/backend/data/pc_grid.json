@@ -15,10 +15,34 @@
     ],
     [
       "empty",
+      "hit",
+      "hit",
+      "hit",
       "empty",
       "empty",
       "empty",
       "empty",
+      "empty",
+      "empty"
+    ],
+    [
+      "empty",
+      "empty",
+      "empty",
+      "empty",
+      "pc_ship2",
+      "empty",
+      "empty",
+      "empty",
+      "empty",
+      "empty"
+    ],
+    [
+      "empty",
+      "empty",
+      "empty",
+      "empty",
+      "pc_ship2",
       "empty",
       "empty",
       "empty",
@@ -47,7 +71,19 @@
       "empty",
       "empty",
       "empty",
-      "empty"
+      "pc_ship4"
+    ],
+    [
+      "empty",
+      "empty",
+      "empty",
+      "pc_ship5",
+      "pc_ship5",
+      "pc_ship5",
+      "pc_ship5",
+      "empty",
+      "empty",
+      "pc_ship4"
     ],
     [
       "empty",
@@ -58,8 +94,8 @@
       "empty",
       "empty",
       "empty",
-      "empty",
-      "empty"
+      "pc_ship1",
+      "pc_ship4"
     ],
     [
       "empty",
@@ -70,43 +106,7 @@
       "empty",
       "empty",
       "empty",
-      "empty",
-      "empty"
-    ],
-    [
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty"
-    ],
-    [
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty"
-    ],
-    [
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
-      "empty",
+      "pc_ship1",
       "empty"
     ],
     [
