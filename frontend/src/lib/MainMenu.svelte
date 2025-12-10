@@ -57,7 +57,9 @@
     <div class="setting-group">
       <label for="board-size">Battlefield Size</label>
       <select id="board-size" bind:value={selectedSize}>
+        <option value="7x7">7×7</option>
         <option value="10x10">10×10</option>
+        <option value="13x13">13×13</option>
       </select>
     </div>
     

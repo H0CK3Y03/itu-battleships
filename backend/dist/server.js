@@ -814,46 +814,68 @@ app.post('/api/planning/restore-available-ships', (req, res) => {
 });
 // Endpoint to reset planning data (clear grid and restore all ships)
 app.post('/api/planning/reset', (req, res) => {
-    fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
-        if (err) {
-            console.error("Error reading planning data:", err);
-            return res.status(500).json({ error: "Could not read planning data" });
+    // Read settings to get the grid size
+    fs_1.default.readFile(settingsPath, 'utf8', (settingsErr, settingsData) => {
+        if (settingsErr) {
+            console.error("Error reading settings:", settingsErr);
+            return res.status(500).json({ error: "Could not read settings" });
         }
-        let planningData;
+        let settings;
         try {
-            planningData = JSON.parse(data);
+            settings = JSON.parse(settingsData);
         }
         catch (parseError) {
-            console.error("Error parsing planning data:", parseError);
-            return res.status(500).json({ error: "Invalid planning data format" });
+            console.error("Error parsing settings:", parseError);
+            return res.status(500).json({ error: "Invalid settings format" });
         }
-        // Clear the grid
-        for (let i = 0; i < planningData.player_grid.tiles.length; i++) {
-            for (let j = 0; j < planningData.player_grid.tiles[i].length; j++) {
-                planningData.player_grid.tiles[i][j] = "empty";
+        // Determine grid size based on settings
+        let gridSize = 10; // default
+        if (settings.selectedBoard === '7x7') {
+            gridSize = 7;
+        }
+        else if (settings.selectedBoard === '13x13') {
+            gridSize = 13;
+        }
+        fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
+            if (err) {
+                console.error("Error reading planning data:", err);
+                return res.status(500).json({ error: "Could not read planning data" });
             }
-        }
-        // Restore all ships to available_ships from all_ships
-        planningData.available_ships = [];
-        planningData.all_ships?.forEach((ship) => {
-            const availableShip = {
-                id: ship.id,
-                size: ship.size,
-                color: ship.color,
-                rotation: 0,
-                name: ship.name
+            let planningData;
+            try {
+                planningData = JSON.parse(data);
+            }
+            catch (parseError) {
+                console.error("Error parsing planning data:", parseError);
+                return res.status(500).json({ error: "Invalid planning data format" });
+            }
+            // Recreate the grid with the correct size
+            planningData.player_grid = {
+                gridSize: gridSize,
+                tiles: Array(gridSize).fill(null).map(() => Array(gridSize).fill('empty'))
             };
-            planningData.available_ships?.push(availableShip);
-        });
-        // Clear placed ships and active ship
-        planningData.placed_ships = null;
-        planningData.active_ship = null;
-        fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
-            if (writeErr) {
-                console.error("Error resetting planning data:", writeErr);
-                return res.status(500).json({ error: "Could not reset planning data" });
-            }
-            res.status(200).json({ message: "Planning data reset successfully" });
+            // Restore all ships to available_ships from all_ships
+            planningData.available_ships = [];
+            planningData.all_ships?.forEach((ship) => {
+                const availableShip = {
+                    id: ship.id,
+                    size: ship.size,
+                    color: ship.color,
+                    rotation: 0,
+                    name: ship.name
+                };
+                planningData.available_ships?.push(availableShip);
+            });
+            // Clear placed ships and active ship
+            planningData.placed_ships = null;
+            planningData.active_ship = null;
+            fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
+                if (writeErr) {
+                    console.error("Error resetting planning data:", writeErr);
+                    return res.status(500).json({ error: "Could not reset planning data" });
+                }
+                res.status(200).json({ message: "Planning data reset successfully" });
+            });
         });
     });
 });
@@ -980,7 +1002,13 @@ app.post('/api/game/init', (req, res) => {
         // Read settings to get grid size
         const settingsData = fs_1.default.readFileSync(settingsPath, 'utf8');
         const settings = JSON.parse(settingsData);
-        const gridSize = settings.selectedBoard === '7x7' ? 7 : 10;
+        let gridSize = 10; // default
+        if (settings.selectedBoard === '7x7') {
+            gridSize = 7;
+        }
+        else if (settings.selectedBoard === '13x13') {
+            gridSize = 13;
+        }
         // Read planning data to get player ships
         const planningData = JSON.parse(fs_1.default.readFileSync(planningPath, 'utf8'));
         // Generate PC ships
