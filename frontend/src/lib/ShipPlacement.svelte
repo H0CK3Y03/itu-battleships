@@ -22,12 +22,39 @@
     try {
       const data = await planningApi.getPlanningData();
       playerGrid.set(data.player_grid);
-      availableShips.set(data.available_ships);
-      placedShips.set(data.placed_ships);
-      activeShip.set(data.active_ship);
       
-      const colors = await planningApi.getColors();
-      shipColors.set(colors);
+      // If available_ships or all_ships is null/empty, initialize them
+      if (!data.available_ships || data.available_ships.length === 0) {
+        if (!data.all_ships || data.all_ships.length === 0) {
+          // Call set-available-ships to initialize ships
+          await planningApi.setAvailableShips();
+          // Reload data after initialization
+          const updatedData = await planningApi.getPlanningData();
+          availableShips.set(updatedData.available_ships);
+          placedShips.set(updatedData.placed_ships);
+          activeShip.set(updatedData.active_ship);
+          
+          const colors = await planningApi.getColors();
+          shipColors.set(colors);
+        } else {
+          // We have all_ships but not available_ships, initialize from all_ships
+          await planningApi.setAvailableShips();
+          const updatedData = await planningApi.getPlanningData();
+          availableShips.set(updatedData.available_ships);
+          placedShips.set(updatedData.placed_ships);
+          activeShip.set(updatedData.active_ship);
+          
+          const colors = await planningApi.getColors();
+          shipColors.set(colors);
+        }
+      } else {
+        availableShips.set(data.available_ships);
+        placedShips.set(data.placed_ships);
+        activeShip.set(data.active_ship);
+        
+        const colors = await planningApi.getColors();
+        shipColors.set(colors);
+      }
     } catch (error) {
       console.error('Failed to load planning data:', error);
     } finally {
