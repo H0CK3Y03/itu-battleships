@@ -10,9 +10,6 @@
   
   onMount(async () => {
     try {
-      // Reset planning data on app start
-      await planningApi.resetPlanning();
-      
       const settings = await settingsApi.getSettings();
       selectedSize = settings.selectedBoard;
       boardSize.set(selectedSize);
@@ -24,6 +21,9 @@
   const handlePlay = async () => {
     loading = true;
     try {
+      // Reset planning data before starting new game
+      await planningApi.resetPlanning();
+      
       await settingsApi.updateSettings(selectedSize);
       await screenApi.updateScreen('planning');
       currentScreen.set('planning');
