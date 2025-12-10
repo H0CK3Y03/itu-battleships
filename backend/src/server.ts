@@ -424,6 +424,17 @@ app.post('/api/planning/placed-ships', (req: Request, res: Response) => {
       planningData.available_ships = planningData.available_ships.filter((s) => s.id !== ship.id);
     }
 
+    // Validate bounds before updating grid
+    if (newPlacingShip.rotation === 0) {
+      if (col + newPlacingShip.size > planningData.player_grid.gridSize) {
+        return res.status(400).json({ error: "Ship placement exceeds grid boundaries" });
+      }
+    } else {
+      if (row + newPlacingShip.size > planningData.player_grid.gridSize) {
+        return res.status(400).json({ error: "Ship placement exceeds grid boundaries" });
+      }
+    }
+
     // Update the grid tiles with the ship name
     if (newPlacingShip.rotation === 0) {
       // Horizontal placement
