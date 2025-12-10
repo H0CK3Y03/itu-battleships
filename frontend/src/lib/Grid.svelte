@@ -21,14 +21,14 @@
     }
   };
   
-  const getCellColor = (cellValue: string): string => {
+  $: getCellColor = (cellValue: string): string => {
     if (cellValue === 'empty' || hideShips) {
       return '#2C3E50';
     }
     return colors[cellValue] || '#2C3E50';
   };
   
-  const getCellStatus = (cellValue: string): string => {
+  $: getCellStatus = (cellValue: string): string => {
     if (cellValue === 'hit') return 'hit';
     if (cellValue === 'miss') return 'miss';
     return '';
