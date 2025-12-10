@@ -12,7 +12,8 @@
     activeShip,
     shipColors,
     currentScreen,
-    canConfirmPlacement
+    canConfirmPlacement,
+    selectedInventoryShip
   } from '../stores/gameStore';
   import type { IShip } from '../types/interfaces';
   
@@ -102,10 +103,29 @@
       
       // If clicking on empty cell
       if (cellValue === 'empty') {
-        // If we have available ships, place the first one
-        if ($availableShips && $availableShips.length > 0) {
-          const shipToPlace = $availableShips[0];
+        // If there's an active ship, try to move it
+        if ($activeShip) {
+          try {
+            await planningApi.moveActiveShip(row, col);
+            
+            // Refresh data
+            const data = await planningApi.getPlanningData();
+            playerGrid.set(data.player_grid);
+            activeShip.set(data.active_ship);
+            placedShips.set(data.placed_ships);
+          } catch (error) {
+            console.error('Failed to move ship:', error);
+            // Optionally show error message to user
+          }
+        } 
+        // Otherwise, place a new ship
+        else if ($availableShips && $availableShips.length > 0) {
+          // Use selected ship from inventory, or first available ship
+          const shipToPlace = $selectedInventoryShip || $availableShips[0];
           await planningApi.placeShip(shipToPlace, row, col);
+          
+          // Clear selected inventory ship after placing
+          selectedInventoryShip.set(null);
           
           // Refresh data
           const data = await planningApi.getPlanningData();
@@ -117,6 +137,9 @@
       } else if (cellValue !== 'empty') {
         // Clicking on a placed ship - select/deselect it
         await planningApi.handleActiveShip(row, col);
+        
+        // Clear inventory selection when selecting a placed ship
+        selectedInventoryShip.set(null);
         
         // Refresh data
         const data = await planningApi.getPlanningData();

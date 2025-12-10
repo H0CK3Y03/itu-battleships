@@ -65,6 +65,11 @@ export const planningApi = {
     fetchApi<{ message: string; active_ship: IPlacedShip | null }>('/planning/rotate-active-ship', {
       method: 'POST',
     }),
+  moveActiveShip: (row: number, col: number) =>
+    fetchApi<{ message: string; active_ship: IPlacedShip | null }>('/planning/move-active-ship', {
+      method: 'POST',
+      body: JSON.stringify({ row, col }),
+    }),
   clearGrid: () =>
     fetchApi<{ message: string }>('/clear-grid', {
       method: 'POST',
