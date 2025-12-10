@@ -194,11 +194,13 @@ async fn start_backend(app: AppHandle) -> Result<String, String> {
             *process = Some(child);
             
             // Show success info in a windows dialog
-            // let success_msg = format!(
-            //     "Backend process started successfully!\n\nBackend path: {:?}\nLogs location: {:?}\n\nWaiting 3 seconds for initialization...",
-            //     backend_path, logs_dir
-            // );
-            // show_info_dialog(&app, "Backend Starting", &success_msg);
+            if false {
+                let success_msg = format!(
+                    "Backend process started successfully!\n\nBackend path: {:?}\nLogs location: {:?}\n\nWaiting 3 seconds for initialization...",
+                    backend_path, logs_dir
+                );
+                show_info_dialog(&app, "Backend Starting", &success_msg);
+            }
         }
         Err(e) => {
             let err_msg = format!(
