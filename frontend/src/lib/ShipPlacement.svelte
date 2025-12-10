@@ -15,10 +15,16 @@
     canConfirmPlacement,
     selectedInventoryShip
   } from '../stores/gameStore';
-  import type { IShip } from '../types/interfaces';
+  import type { IShip, IPlacedShip } from '../types/interfaces';
   
   let loading = false;
   let showCloseDialog = false;
+  
+  // Preview state
+  let previewRow: number | null = null;
+  let previewCol: number | null = null;
+  let previewRotation: number = 0;
+  let previewValid: boolean = true;
   
   onMount(async () => {
     loading = true;
@@ -79,12 +85,96 @@
     window.removeEventListener('keydown', handleKeyDown);
   });
   
+  // Get the ship that would be placed/moved on click
+  function getShipForPreview(): IShip | IPlacedShip | null {
+    if ($activeShip) {
+      // Moving an active ship
+      return $activeShip;
+    } else if ($selectedInventoryShip) {
+      // Placing selected inventory ship
+      return $selectedInventoryShip;
+    } else if ($availableShips && $availableShips.length > 0) {
+      // Placing first available ship
+      return $availableShips[0];
+    }
+    return null;
+  }
+
+  // Check if preview placement is valid
+  function isPreviewValid(row: number, col: number, ship: IShip | IPlacedShip, rotation: number): boolean {
+    const grid = $playerGrid;
+    const size = ship.size;
+    
+    // Check bounds
+    if (rotation === 0) {
+      // Horizontal
+      if (col + size > grid.gridSize) return false;
+      
+      // Check for collisions
+      for (let i = col; i < col + size; i++) {
+        const cellValue = grid.tiles[row][i];
+        // Allow if empty or if it's the same ship being moved
+        if (cellValue !== 'empty' && cellValue !== ship.name) {
+          return false;
+        }
+      }
+    } else {
+      // Vertical
+      if (row + size > grid.gridSize) return false;
+      
+      // Check for collisions
+      for (let i = row; i < row + size; i++) {
+        const cellValue = grid.tiles[i][col];
+        // Allow if empty or if it's the same ship being moved
+        if (cellValue !== 'empty' && cellValue !== ship.name) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  }
+
+  // Handle mouse enter cell for preview
+  const handleCellMouseEnter = (row: number, col: number) => {
+    const ship = getShipForPreview();
+    if (!ship) {
+      previewRow = null;
+      previewCol = null;
+      return;
+    }
+    
+    previewRow = row;
+    previewCol = col;
+    
+    // Use active ship's rotation if moving, otherwise use preview rotation
+    const rotation = $activeShip ? $activeShip.rotation : previewRotation;
+    previewValid = isPreviewValid(row, col, ship, rotation);
+  };
+
+  // Handle mouse leave grid to clear preview
+  const handleGridMouseLeave = () => {
+    previewRow = null;
+    previewCol = null;
+  };
+  
   const handleKeyDown = async (event: KeyboardEvent) => {
     // R key for rotate
     if (event.key === 'r' || event.key === 'R') {
       event.preventDefault();
       if ($activeShip) {
         await handleCellRightClick(0, 0); // Trigger rotation
+      } else {
+        // Toggle preview rotation when no active ship
+        previewRotation = previewRotation === 0 ? 90 : 0;
+        
+        // Revalidate preview if hovering
+        if (previewRow !== null && previewCol !== null) {
+          const ship = getShipForPreview();
+          if (ship) {
+            previewValid = isPreviewValid(previewRow, previewCol, ship, previewRotation);
+          }
+        }
       }
     }
     // Delete key for remove ship
@@ -122,7 +212,14 @@
         else if ($availableShips && $availableShips.length > 0) {
           // Use selected ship from inventory, or first available ship
           const shipToPlace = $selectedInventoryShip || $availableShips[0];
-          await planningApi.placeShip(shipToPlace, row, col);
+          
+          // Apply preview rotation to ship before placing
+          const shipWithRotation = { ...shipToPlace, rotation: previewRotation };
+          
+          await planningApi.placeShip(shipWithRotation, row, col);
+          
+          // Reset preview rotation after placing
+          previewRotation = 0;
           
           // Clear selected inventory ship after placing
           selectedInventoryShip.set(null);
@@ -137,6 +234,9 @@
       } else if (cellValue !== 'empty') {
         // Clicking on a placed ship - select/deselect it
         await planningApi.handleActiveShip(row, col);
+        
+        // Reset preview rotation when selecting a ship
+        previewRotation = 0;
         
         // Clear inventory selection when selecting a placed ship
         selectedInventoryShip.set(null);
@@ -255,9 +355,16 @@
           colors={$shipColors}
           onCellClick={handleCellClick}
           onCellRightClick={handleCellRightClick}
+          onCellMouseEnter={handleCellMouseEnter}
+          onGridMouseLeave={handleGridMouseLeave}
           hideShips={false}
           showHoverEffect={true}
           activeShipName={$activeShip?.name || null}
+          previewRow={previewRow}
+          previewCol={previewCol}
+          previewShip={getShipForPreview()}
+          previewRotation={$activeShip ? $activeShip.rotation : previewRotation}
+          previewValid={previewValid}
         />
       {/if}
     </div>
