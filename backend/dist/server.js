@@ -741,12 +741,10 @@ app.post('/api/planning/move-active-ship', (req, res) => {
         planningData.active_ship.col = col;
         // Update ship position in placed_ships
         if (planningData.placed_ships !== null) {
-            for (let i = 0; i < planningData.placed_ships.length; i++) {
-                if (planningData.placed_ships[i].name === ship.name) {
-                    planningData.placed_ships[i].row = row;
-                    planningData.placed_ships[i].col = col;
-                    break;
-                }
+            const shipToUpdate = planningData.placed_ships.find(s => s.name === ship.name);
+            if (shipToUpdate) {
+                shipToUpdate.row = row;
+                shipToUpdate.col = col;
             }
         }
         fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
