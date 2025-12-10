@@ -3,6 +3,7 @@
   import Grid from './Grid.svelte';
   import Button from './Button.svelte';
   import SurrenderDialog from './SurrenderDialog.svelte';
+  import CloseConfirmDialog from './CloseConfirmDialog.svelte';
   import DefeatScreen from './DefeatScreen.svelte';
   import VictoryScreen from './VictoryScreen.svelte';
   import { gridApi, screenApi, planningApi, gameApi } from '../services/api';
@@ -14,6 +15,7 @@
   let showSurrenderDialog = false;
   let showDefeatScreen = false;
   let showVictoryScreen = false;
+  let showCloseDialog = false;
   let isAttacking = false;
   let gameOver = false;
   
@@ -134,6 +136,12 @@
   };
   
   const handleClose = async () => {
+    // Show confirmation dialog instead of closing immediately
+    showCloseDialog = true;
+  };
+
+  const handleCloseConfirm = async () => {
+    showCloseDialog = false;
     try {
       // Reset planning data before going back to menu
       await planningApi.resetPlanning();
@@ -142,6 +150,10 @@
     } catch (error) {
       console.error('Failed to close game:', error);
     }
+  };
+
+  const handleCloseCancel = () => {
+    showCloseDialog = false;
   };
 </script>
 
@@ -198,6 +210,12 @@
   <VictoryScreen 
     show={showVictoryScreen}
     onOk={handleVictoryScreenOk}
+  />
+
+  <CloseConfirmDialog 
+    show={showCloseDialog}
+    onConfirm={handleCloseConfirm}
+    onCancel={handleCloseCancel}
   />
 </div>
 

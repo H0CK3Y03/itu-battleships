@@ -3,6 +3,7 @@
   import Grid from './Grid.svelte';
   import ShipInventory from './ShipInventory.svelte';
   import Button from './Button.svelte';
+  import CloseConfirmDialog from './CloseConfirmDialog.svelte';
   import { planningApi, screenApi } from '../services/api';
   import { 
     playerGrid, 
@@ -16,6 +17,7 @@
   import type { IShip } from '../types/interfaces';
   
   let loading = false;
+  let showCloseDialog = false;
   
   onMount(async () => {
     loading = true;
@@ -196,6 +198,12 @@
   };
   
   const handleClose = async () => {
+    // Show confirmation dialog instead of closing immediately
+    showCloseDialog = true;
+  };
+
+  const handleCloseConfirm = async () => {
+    showCloseDialog = false;
     try {
       // Reset planning data before going back to menu
       await planningApi.resetPlanning();
@@ -204,6 +212,10 @@
     } catch (error) {
       console.error('Failed to go back:', error);
     }
+  };
+
+  const handleCloseCancel = () => {
+    showCloseDialog = false;
   };
 </script>
 
@@ -249,6 +261,12 @@
     </button>
   </div>
 </div>
+
+<CloseConfirmDialog 
+  show={showCloseDialog}
+  onConfirm={handleCloseConfirm}
+  onCancel={handleCloseCancel}
+/>
 
 <style>
   .ship-placement {
