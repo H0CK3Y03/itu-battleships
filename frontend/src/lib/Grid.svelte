@@ -1,13 +1,26 @@
 <script lang="ts">
-  import type { IGrid } from '../types/interfaces';
+  import type { IGrid, IShip, IPlacedShip } from '../types/interfaces';
   
   export let grid: IGrid;
   export let colors: Record<string, string> = {};
   export let onCellClick: ((row: number, col: number) => void) | undefined = undefined;
   export let onCellRightClick: ((row: number, col: number) => void) | undefined = undefined;
+  export let onCellMouseEnter: ((row: number, col: number) => void) | undefined = undefined;
+  export let onGridMouseLeave: (() => void) | undefined = undefined;
   export let hideShips = false;
   export let showHoverEffect = true;
   export let activeShipName: string | null = null;
+  
+  // Preview props
+  export let previewRow: number | null = null;
+  export let previewCol: number | null = null;
+  export let previewShip: IShip | IPlacedShip | null = null;
+  export let previewRotation: number = 0;
+  export let previewValid: boolean = true;
+  
+  // Constants for rotation values
+  const HORIZONTAL = 0;
+  const VERTICAL = 90;
   
   // Debug logging whenever colors prop changes
   $: {
@@ -39,6 +52,39 @@
     }
   };
   
+  const handleCellMouseEnter = (row: number, col: number) => {
+    if (onCellMouseEnter) {
+      onCellMouseEnter(row, col);
+    }
+  };
+
+  const handleGridMouseLeave = () => {
+    if (onGridMouseLeave) {
+      onGridMouseLeave();
+    }
+  };
+  
+  function isPreviewCell(rowIndex: number, colIndex: number): boolean {
+    if (previewRow === null || previewCol === null || !previewShip) {
+      return false;
+    }
+    
+    const size = previewShip.size;
+    
+    if (previewRotation === HORIZONTAL) {
+      // Horizontal preview
+      return rowIndex === previewRow && colIndex >= previewCol && colIndex < previewCol + size;
+    } else {
+      // Vertical preview
+      return colIndex === previewCol && rowIndex >= previewRow && rowIndex < previewRow + size;
+    }
+  }
+
+  function getPreviewColor(): string {
+    if (!previewShip) return '';
+    return previewValid ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
+  }
+  
   $: getCellColor = (cellValue: string): string => {
     // Debug logging for color lookup
     if (cellValue !== 'empty') {
@@ -59,7 +105,7 @@
   };
 </script>
 
-<div class="grid-container">
+<div class="grid-container" role="region" on:mouseleave={handleGridMouseLeave}>
   <div class="grid" style="--grid-size: {grid.gridSize}">
     {#each grid.tiles as row, rowIndex}
       {#each row as cell, colIndex}
@@ -67,9 +113,11 @@
           class="cell {getCellStatus(cell)}"
           class:hoverable={showHoverEffect}
           class:active-ship={!hideShips && cell === activeShipName}
-          style="background-color: {getCellColor(cell)}"
+          class:preview={isPreviewCell(rowIndex, colIndex)}
+          style="background-color: {isPreviewCell(rowIndex, colIndex) ? getPreviewColor() : getCellColor(cell)}"
           on:click={() => handleCellClick(rowIndex, colIndex)}
           on:contextmenu={(e) => handleCellRightClick(e, rowIndex, colIndex)}
+          on:mouseenter={() => handleCellMouseEnter(rowIndex, colIndex)}
         >
           {#if cell === 'hit'}
             <span class="hit-marker">✕</span>
@@ -122,6 +170,13 @@
     outline-offset: -3px;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     z-index: 10;
+    position: relative;
+  }
+
+  .cell.preview {
+    border: 2px dashed #FFFFFF;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    z-index: 5;
     position: relative;
   }
 
