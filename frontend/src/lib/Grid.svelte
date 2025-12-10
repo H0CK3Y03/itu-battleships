@@ -21,7 +21,7 @@
     }
   };
   
-  const getCellColor = (cellValue: string): string => {
+  $: getCellColor = (cellValue: string): string => {
     if (cellValue === 'empty' || hideShips) {
       return '#2C3E50';
     }
