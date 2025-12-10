@@ -95,3 +95,19 @@ export const gridApi = {
       body: JSON.stringify({ gridSize, tiles }),
     }),
 };
+
+// Game Mechanics
+export const gameApi = {
+  initGame: () => fetchApi<{ message: string }>('/game/init', { method: 'POST' }),
+  playerAttack: (row: number, col: number) => 
+    fetchApi<{ result: string; shipSunk?: string; gameOver: boolean; winner?: string }>('/game/attack', {
+      method: 'POST',
+      body: JSON.stringify({ row, col })
+    }),
+  aiAttack: () => 
+    fetchApi<{ row: number; col: number; result: string; shipSunk?: string; gameOver: boolean; winner?: string }>('/game/ai-attack', {
+      method: 'POST'
+    }),
+  getGameStatus: () => 
+    fetchApi<{ playerShipsRemaining: number; pcShipsRemaining: number; isPlayerTurn: boolean; gameOver: boolean; winner?: string }>('/game/status')
+};

@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import fs from 'fs';
 import cors from 'cors';
 import path from 'path';
-import { IPlanningData, IPlacedShip, IShip } from './data_interfaces';
+import { IPlanningData, IPlacedShip, IShip, IGameState, IPcShipsData } from './data_interfaces';
 
 const app = express();
 const PORT = 5000;
@@ -124,6 +124,12 @@ const pcGridPath = path.join(dataDir, 'pc_grid.json');
 
 // path for json for ships
 const planningPath = path.join(dataDir, 'planning.json');
+
+// path for json for game state
+const gameStatePath = path.join(dataDir, 'game_state.json');
+
+// path for json for PC ships
+const pcShipsPath = path.join(dataDir, 'pc_ships.json');
 
 // Log paths for debugging
 console.log('Data directory:', dataDir);
@@ -847,6 +853,429 @@ app.post('/api/planning/reset', (req: Request, res: Response) => {
 });
 
 // ------ PLANNING END
+
+// ------ GAME MECHANICS START
+
+// Helper function to check if a ship can be placed
+function canPlaceShip(
+  grid: string[][],
+  row: number,
+  col: number,
+  size: number,
+  rotation: number,
+  gridSize: number
+): boolean {
+  if (rotation === 0) {
+    // Horizontal
+    if (col + size > gridSize) return false;
+    for (let i = col; i < col + size; i++) {
+      if (grid[row][i] !== 'empty') return false;
+    }
+  } else {
+    // Vertical
+    if (row + size > gridSize) return false;
+    for (let i = row; i < row + size; i++) {
+      if (grid[i][col] !== 'empty') return false;
+    }
+  }
+  return true;
+}
+
+// Helper function to place a ship on the grid
+function placeShipOnGrid(
+  grid: string[][],
+  row: number,
+  col: number,
+  size: number,
+  rotation: number,
+  shipName: string
+): void {
+  if (rotation === 0) {
+    // Horizontal
+    for (let i = col; i < col + size; i++) {
+      grid[row][i] = shipName;
+    }
+  } else {
+    // Vertical
+    for (let i = row; i < row + size; i++) {
+      grid[i][col] = shipName;
+    }
+  }
+}
+
+// Function to randomly place PC ships
+function placePCShips(gridSize: number): IPlacedShip[] {
+  const grid: string[][] = Array(gridSize).fill(null).map(() => Array(gridSize).fill('empty'));
+  const ships: IPlacedShip[] = [];
+  const shipSizes = [2, 2, 3, 3, 4];
+  const colors = ['purple', 'orange', 'green', 'blue', 'grey'];
+  
+  for (let i = 0; i < shipSizes.length; i++) {
+    let placed = false;
+    let attempts = 0;
+    
+    while (!placed && attempts < 100) {
+      const rotation = Math.random() > 0.5 ? 0 : 90;
+      const row = Math.floor(Math.random() * gridSize);
+      const col = Math.floor(Math.random() * gridSize);
+      
+      if (canPlaceShip(grid, row, col, shipSizes[i], rotation, gridSize)) {
+        const shipName = `pc_ship${i + 1}`;
+        placeShipOnGrid(grid, row, col, shipSizes[i], rotation, shipName);
+        ships.push({
+          id: `pc_${i + 1}`,
+          size: shipSizes[i],
+          color: colors[i],
+          rotation,
+          name: shipName,
+          row,
+          col
+        });
+        placed = true;
+      }
+      attempts++;
+    }
+    
+    if (!placed) {
+      console.error(`Failed to place ship ${i + 1} after 100 attempts`);
+    }
+  }
+  
+  return ships;
+}
+
+// Function to get AI's next attack target
+function getAIAttack(gameState: IGameState, playerGrid: { gridSize: number; tiles: string[][] }): { row: number; col: number } {
+  // Target mode: We have targets from previous hits
+  if (gameState.aiTargets && gameState.aiTargets.length > 0) {
+    const target = gameState.aiTargets.shift()!;
+    return target;
+  }
+  
+  // Hunt mode: Random attack on untouched cell
+  const availableCells: {row: number, col: number}[] = [];
+  for (let row = 0; row < playerGrid.gridSize; row++) {
+    for (let col = 0; col < playerGrid.gridSize; col++) {
+      if (playerGrid.tiles[row][col] !== 'hit' && playerGrid.tiles[row][col] !== 'miss') {
+        availableCells.push({ row, col });
+      }
+    }
+  }
+  
+  if (availableCells.length === 0) {
+    throw new Error('No available cells to attack');
+  }
+  
+  const randomIndex = Math.floor(Math.random() * availableCells.length);
+  return availableCells[randomIndex];
+}
+
+// Function to add adjacent cells as AI targets after a hit
+function addAdjacentTargets(row: number, col: number, gameState: IGameState, gridSize: number, playerGrid: { gridSize: number; tiles: string[][] }): void {
+  const adjacent = [
+    { row: row - 1, col },
+    { row: row + 1, col },
+    { row, col: col - 1 },
+    { row, col: col + 1 }
+  ];
+  
+  adjacent.forEach(cell => {
+    if (cell.row >= 0 && cell.row < gridSize && cell.col >= 0 && cell.col < gridSize) {
+      // Only add if not already attacked
+      if (playerGrid.tiles[cell.row][cell.col] !== 'hit' && playerGrid.tiles[cell.row][cell.col] !== 'miss') {
+        // Check if not already in targets
+        const alreadyTargeted = gameState.aiTargets.some(t => t.row === cell.row && t.col === cell.col);
+        if (!alreadyTargeted) {
+          gameState.aiTargets.push(cell);
+        }
+      }
+    }
+  });
+}
+
+// Endpoint to initialize game
+app.post('/api/game/init', (req: Request, res: Response) => {
+  try {
+    // Read settings to get grid size
+    const settingsData = fs.readFileSync(settingsPath, 'utf8');
+    const settings = JSON.parse(settingsData);
+    const gridSize = settings.selectedBoard === '7x7' ? 7 : 10;
+    
+    // Read planning data to get player ships
+    const planningData: IPlanningData = JSON.parse(fs.readFileSync(planningPath, 'utf8'));
+    
+    // Generate PC ships
+    const pcShips = placePCShips(gridSize);
+    
+    // Create PC grid with ship positions
+    const pcGrid: string[][] = Array(gridSize).fill(null).map(() => Array(gridSize).fill('empty'));
+    pcShips.forEach(ship => {
+      placeShipOnGrid(pcGrid, ship.row, ship.col, ship.size, ship.rotation, ship.name);
+    });
+    
+    // Save PC grid
+    fs.writeFileSync(pcGridPath, JSON.stringify({ gridSize, tiles: pcGrid }, null, 2));
+    
+    // Save PC ships data
+    const pcShipsData: IPcShipsData = {
+      gridSize,
+      ships: pcShips
+    };
+    fs.writeFileSync(pcShipsPath, JSON.stringify(pcShipsData, null, 2));
+    
+    // Initialize game state
+    const playerShipHealth: Record<string, number> = {};
+    planningData.placed_ships?.forEach(ship => {
+      playerShipHealth[ship.name] = ship.size;
+    });
+    
+    const pcShipHealth: Record<string, number> = {};
+    pcShips.forEach(ship => {
+      pcShipHealth[ship.name] = ship.size;
+    });
+    
+    const gameState: IGameState = {
+      playerShipsRemaining: planningData.placed_ships?.length || 0,
+      pcShipsRemaining: pcShips.length,
+      isPlayerTurn: true,
+      gameOver: false,
+      winner: null,
+      aiMode: 'hunt',
+      aiLastHit: null,
+      aiTargets: [],
+      playerShipHealth,
+      pcShipHealth
+    };
+    
+    fs.writeFileSync(gameStatePath, JSON.stringify(gameState, null, 2));
+    
+    res.json({ message: 'Game initialized successfully' });
+  } catch (error) {
+    console.error('Error initializing game:', error);
+    res.status(500).json({ error: 'Failed to initialize game' });
+  }
+});
+
+// Endpoint for player attack
+app.post('/api/game/attack', (req: Request, res: Response) => {
+  const { row, col } = req.body;
+  
+  fs.readFile(gameStatePath, 'utf8', (err, gameStateData) => {
+    if (err) {
+      console.error('Error reading game state:', err);
+      return res.status(500).json({ error: 'Failed to read game state' });
+    }
+    
+    const gameState: IGameState = JSON.parse(gameStateData);
+    
+    if (gameState.gameOver) {
+      return res.status(400).json({ error: 'Game is already over' });
+    }
+    
+    if (!gameState.isPlayerTurn) {
+      return res.status(400).json({ error: 'Not player turn' });
+    }
+    
+    // Read PC grid
+    fs.readFile(pcGridPath, 'utf8', (err2, pcGridDataStr) => {
+      if (err2) {
+        console.error('Error reading PC grid:', err2);
+        return res.status(500).json({ error: 'Failed to read PC grid' });
+      }
+      
+      fs.readFile(pcShipsPath, 'utf8', (err3, pcShipsDataStr) => {
+        if (err3) {
+          console.error('Error reading PC ships:', err3);
+          return res.status(500).json({ error: 'Failed to read PC ships' });
+        }
+        
+        const pcGridData = JSON.parse(pcGridDataStr);
+        const pcShipsData: IPcShipsData = JSON.parse(pcShipsDataStr);
+        
+        // Check if cell already attacked
+        if (pcGridData.tiles[row][col] === 'hit' || pcGridData.tiles[row][col] === 'miss') {
+          return res.status(400).json({ error: 'Cell already attacked' });
+        }
+        
+        const cellValue = pcGridData.tiles[row][col];
+        let result: 'hit' | 'miss' | 'sunk' = 'miss';
+        let shipSunk: string | undefined;
+        
+        if (cellValue !== 'empty') {
+          // Hit!
+          result = 'hit';
+          pcGridData.tiles[row][col] = 'hit';
+          
+          // Update ship health
+          gameState.pcShipHealth[cellValue]--;
+          
+          // Check if ship is sunk
+          if (gameState.pcShipHealth[cellValue] === 0) {
+            result = 'sunk';
+            shipSunk = cellValue;
+            gameState.pcShipsRemaining--;
+          }
+        } else {
+          // Miss
+          pcGridData.tiles[row][col] = 'miss';
+        }
+        
+        // Check win condition
+        if (gameState.pcShipsRemaining === 0) {
+          gameState.gameOver = true;
+          gameState.winner = 'player';
+        }
+        
+        // Switch turn
+        gameState.isPlayerTurn = false;
+        
+        // Save updated PC grid
+        fs.writeFile(pcGridPath, JSON.stringify(pcGridData, null, 2), (writeErr) => {
+          if (writeErr) {
+            console.error('Error saving PC grid:', writeErr);
+            return res.status(500).json({ error: 'Failed to save PC grid' });
+          }
+          
+          // Save game state
+          fs.writeFile(gameStatePath, JSON.stringify(gameState, null, 2), (writeErr2) => {
+            if (writeErr2) {
+              console.error('Error saving game state:', writeErr2);
+              return res.status(500).json({ error: 'Failed to save game state' });
+            }
+            
+            res.json({
+              result,
+              shipSunk,
+              gameOver: gameState.gameOver,
+              winner: gameState.winner
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// Endpoint for AI attack
+app.post('/api/game/ai-attack', (req: Request, res: Response) => {
+  fs.readFile(gameStatePath, 'utf8', (err, gameStateData) => {
+    if (err) {
+      console.error('Error reading game state:', err);
+      return res.status(500).json({ error: 'Failed to read game state' });
+    }
+    
+    const gameState: IGameState = JSON.parse(gameStateData);
+    
+    if (gameState.gameOver) {
+      return res.status(400).json({ error: 'Game is already over' });
+    }
+    
+    // Read player grid from planning data
+    fs.readFile(planningPath, 'utf8', (err2, planningDataStr) => {
+      if (err2) {
+        console.error('Error reading planning data:', err2);
+        return res.status(500).json({ error: 'Failed to read planning data' });
+      }
+      
+      const planningData: IPlanningData = JSON.parse(planningDataStr);
+      const playerGrid = planningData.player_grid;
+      
+      try {
+        // Get AI attack target
+        const target = getAIAttack(gameState, playerGrid);
+        
+        const cellValue = playerGrid.tiles[target.row][target.col];
+        let result: 'hit' | 'miss' | 'sunk' = 'miss';
+        let shipSunk: string | undefined;
+        
+        if (cellValue !== 'empty' && cellValue !== 'hit' && cellValue !== 'miss') {
+          // Hit!
+          result = 'hit';
+          playerGrid.tiles[target.row][target.col] = 'hit';
+          
+          // Update ship health
+          gameState.playerShipHealth[cellValue]--;
+          
+          // Check if ship is sunk
+          if (gameState.playerShipHealth[cellValue] === 0) {
+            result = 'sunk';
+            shipSunk = cellValue;
+            gameState.playerShipsRemaining--;
+            // Clear AI targets when ship is sunk
+            gameState.aiTargets = [];
+            gameState.aiMode = 'hunt';
+          } else {
+            // Ship hit but not sunk - add adjacent cells to targets
+            gameState.aiMode = 'target';
+            addAdjacentTargets(target.row, target.col, gameState, playerGrid.gridSize, playerGrid);
+          }
+          
+          gameState.aiLastHit = target;
+        } else {
+          // Miss
+          playerGrid.tiles[target.row][target.col] = 'miss';
+        }
+        
+        // Check lose condition
+        if (gameState.playerShipsRemaining === 0) {
+          gameState.gameOver = true;
+          gameState.winner = 'pc';
+        }
+        
+        // Switch turn back to player
+        gameState.isPlayerTurn = true;
+        
+        // Save updated player grid
+        fs.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
+          if (writeErr) {
+            console.error('Error saving planning data:', writeErr);
+            return res.status(500).json({ error: 'Failed to save planning data' });
+          }
+          
+          // Save game state
+          fs.writeFile(gameStatePath, JSON.stringify(gameState, null, 2), (writeErr2) => {
+            if (writeErr2) {
+              console.error('Error saving game state:', writeErr2);
+              return res.status(500).json({ error: 'Failed to save game state' });
+            }
+            
+            res.json({
+              row: target.row,
+              col: target.col,
+              result,
+              shipSunk,
+              gameOver: gameState.gameOver,
+              winner: gameState.winner
+            });
+          });
+        });
+      } catch (error) {
+        console.error('Error processing AI attack:', error);
+        return res.status(500).json({ error: 'Failed to process AI attack' });
+      }
+    });
+  });
+});
+
+// Endpoint to get game status
+app.get('/api/game/status', (req: Request, res: Response) => {
+  try {
+    const gameState: IGameState = JSON.parse(fs.readFileSync(gameStatePath, 'utf8'));
+    
+    res.json({
+      playerShipsRemaining: gameState.playerShipsRemaining,
+      pcShipsRemaining: gameState.pcShipsRemaining,
+      isPlayerTurn: gameState.isPlayerTurn,
+      gameOver: gameState.gameOver,
+      winner: gameState.winner
+    });
+  } catch (error) {
+    console.error('Error getting game status:', error);
+    res.status(500).json({ error: 'Failed to get game status' });
+  }
+});
+
+// ------ GAME MECHANICS END
 
 // Endpoint for '/'
 app.get('/', (req: Request, res: Response) => {

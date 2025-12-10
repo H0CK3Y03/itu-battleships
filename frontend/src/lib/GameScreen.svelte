@@ -4,16 +4,23 @@
   import Button from './Button.svelte';
   import SurrenderDialog from './SurrenderDialog.svelte';
   import DefeatScreen from './DefeatScreen.svelte';
-  import { gridApi, screenApi, planningApi } from '../services/api';
+  import VictoryScreen from './VictoryScreen.svelte';
+  import { gridApi, screenApi, planningApi, gameApi } from '../services/api';
   import { playerGrid, opponentGrid, shipColors, currentScreen } from '../stores/gameStore';
   
   let loading = false;
   let showSurrenderDialog = false;
   let showDefeatScreen = false;
+  let showVictoryScreen = false;
+  let isAttacking = false;
+  let gameOver = false;
   
   onMount(async () => {
     loading = true;
     try {
+      // Initialize game - place PC ships
+      await gameApi.initGame();
+      
       const playerGridData = await gridApi.getPlayerGrid();
       playerGrid.set(playerGridData);
       console.log('GameScreen - playerGrid loaded:', playerGridData);
@@ -39,20 +46,49 @@
   };
   
   const handleOpponentCellClick = async (row: number, col: number) => {
+    if (isAttacking || gameOver) return;
+    
+    const cellValue = $opponentGrid.tiles[row][col];
+    if (cellValue === 'hit' || cellValue === 'miss') {
+      return; // Already attacked
+    }
+    
+    isAttacking = true;
+    
     try {
-      // Attack opponent's grid
-      console.log('Attacking opponent at:', row, col);
+      // Player attacks
+      const attackResult = await gameApi.playerAttack(row, col);
+      console.log('Player attack result:', attackResult);
       
-      // TODO: Implement attack logic with backend
-      // This would involve:
-      // 1. Send attack to backend
-      // 2. Get response (hit/miss)
-      // 3. Update opponent grid
-      // 4. AI makes counter-attack
-      // 5. Update player grid
+      // Update opponent grid
+      const updatedPcGrid = await gridApi.getPcGrid();
+      opponentGrid.set(updatedPcGrid);
       
+      if (attackResult.gameOver) {
+        gameOver = true;
+        if (attackResult.winner === 'player') {
+          showVictoryScreen = true;
+        }
+        return;
+      }
+      
+      // AI counter-attacks
+      await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay
+      const aiResult = await gameApi.aiAttack();
+      console.log('AI attack result:', aiResult);
+      
+      // Update player grid
+      const updatedPlayerGrid = await gridApi.getPlayerGrid();
+      playerGrid.set(updatedPlayerGrid);
+      
+      if (aiResult.gameOver) {
+        gameOver = true;
+        showDefeatScreen = true;
+      }
     } catch (error) {
       console.error('Failed to attack:', error);
+    } finally {
+      isAttacking = false;
     }
   };
   
@@ -79,6 +115,19 @@
       console.error('Failed to return to menu:', error);
     } finally {
       showDefeatScreen = false;
+    }
+  };
+  
+  const handleVictoryScreenOk = async () => {
+    try {
+      // Reset planning data before going back to menu
+      await planningApi.resetPlanning();
+      await screenApi.updateScreen('menu');
+      currentScreen.set('menu');
+    } catch (error) {
+      console.error('Failed to return to menu:', error);
+    } finally {
+      showVictoryScreen = false;
     }
   };
   
@@ -142,6 +191,11 @@
   <DefeatScreen 
     show={showDefeatScreen}
     onOk={handleDefeatScreenOk}
+  />
+  
+  <VictoryScreen 
+    show={showVictoryScreen}
+    onOk={handleVictoryScreenOk}
   />
 </div>
 
