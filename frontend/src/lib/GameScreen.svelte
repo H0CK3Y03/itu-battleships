@@ -3,11 +3,13 @@
   import Grid from './Grid.svelte';
   import Button from './Button.svelte';
   import SurrenderDialog from './SurrenderDialog.svelte';
+  import DefeatScreen from './DefeatScreen.svelte';
   import { gridApi, screenApi } from '../services/api';
   import { playerGrid, opponentGrid, shipColors, currentScreen } from '../stores/gameStore';
   
   let loading = false;
   let showSurrenderDialog = false;
+  let showDefeatScreen = false;
   
   onMount(async () => {
     loading = true;
@@ -52,17 +54,22 @@
   };
   
   const handleSurrenderConfirm = async () => {
-    try {
-      await screenApi.updateScreen('menu');
-      currentScreen.set('menu');
-      showSurrenderDialog = false;
-    } catch (error) {
-      console.error('Failed to surrender:', error);
-    }
+    showSurrenderDialog = false;
+    showDefeatScreen = true;
   };
   
   const handleSurrenderCancel = () => {
     showSurrenderDialog = false;
+  };
+  
+  const handleDefeatScreenOk = async () => {
+    try {
+      await screenApi.updateScreen('menu');
+      currentScreen.set('menu');
+      showDefeatScreen = false;
+    } catch (error) {
+      console.error('Failed to return to menu:', error);
+    }
   };
   
   const handleClose = async () => {
@@ -118,6 +125,11 @@
     show={showSurrenderDialog}
     onConfirm={handleSurrenderConfirm}
     onCancel={handleSurrenderCancel}
+  />
+  
+  <DefeatScreen 
+    show={showDefeatScreen}
+    onOk={handleDefeatScreenOk}
   />
 </div>
 
