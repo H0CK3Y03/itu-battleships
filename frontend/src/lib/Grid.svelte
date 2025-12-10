@@ -66,7 +66,7 @@
         <button
           class="cell {getCellStatus(cell)}"
           class:hoverable={showHoverEffect}
-          class:active-ship={!hideShips && cell !== 'empty' && cell === activeShipName}
+          class:active-ship={!hideShips && cell === activeShipName}
           style="background-color: {getCellColor(cell)}"
           on:click={() => handleCellClick(rowIndex, colIndex)}
           on:contextmenu={(e) => handleCellRightClick(e, rowIndex, colIndex)}

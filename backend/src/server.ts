@@ -673,7 +673,7 @@ app.post('/api/planning/rotate-active-ship', (req: Request, res: Response) => {
         return res.status(400).json({ error: "Cannot rotate ship - would exceed grid bounds" });
       }
 
-      // Check all cells except the first one (which is the ship itself)
+      // Check all cells except the first one (which is already occupied by the ship)
       for (let i = planningData.active_ship.col + 1; i < planningData.active_ship.col + planningData.active_ship.size; i++) {
         const cellValue = planningData.player_grid.tiles[planningData.active_ship.row][i];
         // Allow rotation if cell is empty OR contains the same ship we're rotating
@@ -688,7 +688,7 @@ app.post('/api/planning/rotate-active-ship', (req: Request, res: Response) => {
         return res.status(400).json({ error: "Cannot rotate ship - would exceed grid bounds" });
       }
 
-      // Check all cells except the first one (which is the ship itself)
+      // Check all cells except the first one (which is already occupied by the ship)
       for (let j = planningData.active_ship.row + 1; j < planningData.active_ship.row + planningData.active_ship.size; j++) {
         const cellValue = planningData.player_grid.tiles[j][planningData.active_ship.col];
         // Allow rotation if cell is empty OR contains the same ship we're rotating
