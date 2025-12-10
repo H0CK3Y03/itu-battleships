@@ -587,7 +587,7 @@ app.get('/api/planning/active-ship', (req: Request, res: Response) => {
   });
 });
 
-// ENdpoint to remove active ship
+// Endpoint to remove active ship
 app.post('/api/planning/remove-active-ship', (req: Request, res: Response) => {
   fs.readFile(planningPath, 'utf8', (err: NodeJS.ErrnoException | null, data: string) => {
     if (err) {
