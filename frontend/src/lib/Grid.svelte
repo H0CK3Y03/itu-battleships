@@ -7,6 +7,7 @@
   export let onCellRightClick: ((row: number, col: number) => void) | undefined = undefined;
   export let hideShips = false;
   export let showHoverEffect = true;
+  export let activeShipName: string | null = null;
   
   // Debug logging whenever colors prop changes
   $: {
@@ -65,6 +66,7 @@
         <button
           class="cell {getCellStatus(cell)}"
           class:hoverable={showHoverEffect}
+          class:active-ship={!hideShips && cell === activeShipName}
           style="background-color: {getCellColor(cell)}"
           on:click={() => handleCellClick(rowIndex, colIndex)}
           on:contextmenu={(e) => handleCellRightClick(e, rowIndex, colIndex)}
@@ -113,6 +115,14 @@
   .cell.hoverable:hover {
     transform: scale(1.1);
     box-shadow: 0 0 10px rgba(93, 173, 226, 0.5);
+  }
+
+  .cell.active-ship {
+    outline: 3px solid #FFFFFF;
+    outline-offset: -3px;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    z-index: 10;
+    position: relative;
   }
 
   .cell.hit {

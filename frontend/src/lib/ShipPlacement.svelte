@@ -234,6 +234,7 @@
           onCellRightClick={handleCellRightClick}
           hideShips={false}
           showHoverEffect={true}
+          activeShipName={$activeShip?.name || null}
         />
       {/if}
     </div>

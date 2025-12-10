@@ -513,7 +513,7 @@ app.get('/api/planning/active-ship', (req, res) => {
         }
     });
 });
-// ENdpoint to remove active ship
+// Endpoint to remove active ship
 app.post('/api/planning/remove-active-ship', (req, res) => {
     fs_1.default.readFile(planningPath, 'utf8', (err, data) => {
         if (err) {
@@ -580,35 +580,43 @@ app.post('/api/planning/rotate-active-ship', (req, res) => {
             return res.status(500).json({ error: "Invalid planning data format" });
         }
         if (!planningData.active_ship) {
-            return;
+            return res.status(400).json({ error: "No active ship to rotate" });
         }
         const direction = planningData.active_ship.rotation === 0 ? 90 : 0;
         let canBePlaced = true;
         // check if ship can be placed
         if (direction === 0) {
+            // Rotating to horizontal
             if (planningData.active_ship.col + planningData.active_ship.size > planningData.player_grid.gridSize) {
-                return;
+                return res.status(400).json({ error: "Cannot rotate ship - would exceed grid bounds" });
             }
+            // Check all cells except the first one (which is already occupied by the ship)
             for (let i = planningData.active_ship.col + 1; i < planningData.active_ship.col + planningData.active_ship.size; i++) {
-                if (planningData.player_grid.tiles[planningData.active_ship.row][i] !== "empty") {
+                const cellValue = planningData.player_grid.tiles[planningData.active_ship.row][i];
+                // Allow rotation if cell is empty OR contains the same ship we're rotating
+                if (cellValue !== "empty" && cellValue !== planningData.active_ship.name) {
                     canBePlaced = false;
                     break;
                 }
             }
         }
         else {
+            // Rotating to vertical
             if (planningData.active_ship.row + planningData.active_ship.size > planningData.player_grid.gridSize) {
-                return;
+                return res.status(400).json({ error: "Cannot rotate ship - would exceed grid bounds" });
             }
+            // Check all cells except the first one (which is already occupied by the ship)
             for (let j = planningData.active_ship.row + 1; j < planningData.active_ship.row + planningData.active_ship.size; j++) {
-                if (planningData.player_grid.tiles[j][planningData.active_ship.col] !== "empty") {
+                const cellValue = planningData.player_grid.tiles[j][planningData.active_ship.col];
+                // Allow rotation if cell is empty OR contains the same ship we're rotating
+                if (cellValue !== "empty" && cellValue !== planningData.active_ship.name) {
                     canBePlaced = false;
                     break;
                 }
             }
         }
         if (!canBePlaced) {
-            return;
+            return res.status(400).json({ error: "Cannot rotate ship - would collide with another ship" });
         }
         // Remove old ship from grid
         if (planningData.active_ship.rotation === 0) {
