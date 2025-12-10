@@ -35,7 +35,9 @@
           activeShip.set(updatedData.active_ship);
           
           const colors = await planningApi.getColors();
+          console.log('ShipPlacement - colors loaded:', colors);
           shipColors.set(colors);
+          console.log('ShipPlacement - shipColors store updated');
         } else {
           // We have all_ships but not available_ships, initialize from all_ships
           await planningApi.setAvailableShips();
@@ -45,7 +47,9 @@
           activeShip.set(updatedData.active_ship);
           
           const colors = await planningApi.getColors();
+          console.log('ShipPlacement - colors loaded:', colors);
           shipColors.set(colors);
+          console.log('ShipPlacement - shipColors store updated');
         }
       } else {
         availableShips.set(data.available_ships);
@@ -53,7 +57,9 @@
         activeShip.set(data.active_ship);
         
         const colors = await planningApi.getColors();
+        console.log('ShipPlacement - colors loaded:', colors);
         shipColors.set(colors);
+        console.log('ShipPlacement - shipColors store updated');
       }
     } catch (error) {
       console.error('Failed to load planning data:', error);

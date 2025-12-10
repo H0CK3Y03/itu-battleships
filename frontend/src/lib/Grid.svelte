@@ -8,6 +8,23 @@
   export let hideShips = false;
   export let showHoverEffect = true;
   
+  // Debug logging whenever colors prop changes
+  $: {
+    console.log('Grid - colors prop updated:', colors);
+    console.log('Grid - colors keys:', Object.keys(colors));
+    console.log('Grid - hideShips:', hideShips);
+  }
+  
+  // Debug logging for grid data
+  $: {
+    if (grid && grid.tiles && grid.tiles.length > 0) {
+      const sampleRow = grid.tiles[0];
+      const nonEmptyCells = sampleRow.filter(cell => cell !== 'empty');
+      console.log('Grid - sample row:', sampleRow);
+      console.log('Grid - non-empty cells in row 0:', nonEmptyCells);
+    }
+  }
+  
   const handleCellClick = (row: number, col: number) => {
     if (onCellClick) {
       onCellClick(row, col);
@@ -22,6 +39,12 @@
   };
   
   $: getCellColor = (cellValue: string): string => {
+    // Debug logging for color lookup
+    if (cellValue !== 'empty') {
+      const resolvedColor = colors[cellValue] || '#2C3E50';
+      console.log(`Grid - getCellColor("${cellValue}"):`, resolvedColor, '| colors obj:', colors);
+    }
+    
     if (cellValue === 'empty' || hideShips) {
       return '#2C3E50';
     }
