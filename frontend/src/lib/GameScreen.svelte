@@ -66,9 +66,10 @@
     try {
       await screenApi.updateScreen('menu');
       currentScreen.set('menu');
-      showDefeatScreen = false;
     } catch (error) {
       console.error('Failed to return to menu:', error);
+    } finally {
+      showDefeatScreen = false;
     }
   };
   
