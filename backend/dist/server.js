@@ -362,6 +362,19 @@ app.post('/api/planning/placed-ships', (req, res) => {
         if (planningData.available_ships) {
             planningData.available_ships = planningData.available_ships.filter((s) => s.id !== ship.id);
         }
+        // Update the grid tiles with the ship name
+        if (newPlacingShip.rotation === 0) {
+            // Horizontal placement
+            for (let i = col; i < col + newPlacingShip.size; i++) {
+                planningData.player_grid.tiles[row][i] = newPlacingShip.name;
+            }
+        }
+        else {
+            // Vertical placement (rotation === 90)
+            for (let i = row; i < row + newPlacingShip.size; i++) {
+                planningData.player_grid.tiles[i][col] = newPlacingShip.name;
+            }
+        }
         fs_1.default.writeFile(planningPath, JSON.stringify(planningData, null, 2), (writeErr) => {
             if (writeErr) {
                 console.error("Error saving placed ship:", writeErr);
