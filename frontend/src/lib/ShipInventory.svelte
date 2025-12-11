@@ -5,43 +5,41 @@
   
   export let ships: IShip[] | null;
   
+  // Track if we're handling a click to prevent race conditions
+  let isHandlingClick = false;
+  
   // Auto-select first ship if nothing selected and ships available
-  // BUT only if there's no active placed ship
-  $: if (!$selectedInventoryShip && !$activeShip && ships && ships.length > 0) {
+  $: if (!isHandlingClick && !$selectedInventoryShip && !$activeShip && ships && ships.length > 0) {
     selectedInventoryShip.set(ships[0]);
   }
   
-  // Safety: If active ship exists, clear inventory selection
-  $: if ($activeShip && $selectedInventoryShip) {
-    selectedInventoryShip.set(null);
-  }
-  
   const handleShipClick = async (ship: IShip) => {
-    // If there's an active placed ship, deselect it on the backend
-    if ($activeShip) {
-      try {
-        // Call the backend to deselect the active ship
-        const response = await planningApi.handleActiveShip($activeShip.row, $activeShip.col);
+    isHandlingClick = true;
+    
+    try {
+      // Step 1: If there's an active placed ship, deselect it
+      if ($activeShip) {
+        await planningApi.handleActiveShip($activeShip.row, $activeShip.col);
+        activeShip.set(null);
         
-        // Update active ship from response
-        activeShip.set(response.active_ship);
-        
-        // Refresh grid state to ensure it's deselected
+        // Refresh grid to remove outline
         const data = await planningApi.getPlanningData();
         playerGrid.set(data.player_grid);
-      } catch (error) {
-        console.error('Failed to deselect active ship:', error);
-        return; // Don't proceed with inventory selection if deselection failed
       }
+      
+      // Step 2: Select the clicked inventory ship
+      selectedInventoryShip.update(current => {
+        if (current?.id === ship.id) {
+          // Deselect if clicking same ship
+          return null;
+        }
+        return ship;
+      });
+    } catch (error) {
+      console.error('Failed to handle ship click:', error);
+    } finally {
+      isHandlingClick = false;
     }
-    
-    // Toggle selection
-    selectedInventoryShip.update(current => {
-      if (current?.id === ship.id) {
-        return null; // Deselect if clicking same ship
-      }
-      return ship;
-    });
   };
   
   const groupShipsBySize = (ships: IShip[] | null): Map<number, IShip[]> => {
