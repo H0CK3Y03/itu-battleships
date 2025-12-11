@@ -248,13 +248,114 @@ app.post('/api/settings', (req, res) => {
             return res.status(500).json({ success: false, message: 'Error reading settings' });
         }
         let settings = JSON.parse(data);
+        const oldBoard = settings.selectedBoard;
         settings.selectedBoard = selectedBoard || settings.selectedBoard;
-        fs_1.default.writeFile(settingsPath, JSON.stringify(settings, null, 2), (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error updating settings' });
-            }
-            res.json(settings);
-        });
+        // If board size changed, update planning grid
+        if (oldBoard !== settings.selectedBoard) {
+            const newGridSize = settings.selectedBoard === '7x7' ? 7 : 10;
+            // Use promises to wait for all operations to complete
+            const updatePromises = [];
+            // Update planning grid
+            const planningPromise = new Promise((resolve, reject) => {
+                fs_1.default.readFile(planningPath, 'utf8', (planningErr, planningData) => {
+                    if (planningErr) {
+                        console.error('Error reading planning data:', planningErr);
+                        return reject(planningErr);
+                    }
+                    try {
+                        const planning = JSON.parse(planningData);
+                        // Resize player grid
+                        planning.player_grid.gridSize = newGridSize;
+                        planning.player_grid.tiles = Array(newGridSize).fill(null).map(() => Array(newGridSize).fill('empty'));
+                        // Clear all ships when grid size changes
+                        planning.placed_ships = null;
+                        planning.active_ship = null;
+                        // Reset available ships
+                        planning.available_ships = [];
+                        planning.all_ships?.forEach((ship) => {
+                            planning.available_ships?.push({
+                                id: ship.id,
+                                size: ship.size,
+                                color: ship.color,
+                                rotation: 0,
+                                name: ship.name
+                            });
+                        });
+                        // Use async writeFile instead of sync
+                        fs_1.default.writeFile(planningPath, JSON.stringify(planning, null, 2), (writeErr) => {
+                            if (writeErr) {
+                                console.error('Error writing planning data:', writeErr);
+                                return reject(writeErr);
+                            }
+                            console.log(`Planning grid resized to ${newGridSize}x${newGridSize}`);
+                            resolve();
+                        });
+                    }
+                    catch (parseError) {
+                        console.error('Error updating planning grid size:', parseError);
+                        reject(parseError);
+                    }
+                });
+            });
+            updatePromises.push(planningPromise);
+            // Update PC grid
+            const pcGridPromise = new Promise((resolve, reject) => {
+                fs_1.default.readFile(pcGridPath, 'utf8', (pcErr, pcData) => {
+                    if (pcErr) {
+                        console.error('Error reading PC grid data:', pcErr);
+                        return reject(pcErr);
+                    }
+                    try {
+                        const pcGrid = JSON.parse(pcData);
+                        pcGrid.gridSize = newGridSize;
+                        pcGrid.tiles = Array(newGridSize).fill(null).map(() => Array(newGridSize).fill('empty'));
+                        // Use async writeFile instead of sync
+                        fs_1.default.writeFile(pcGridPath, JSON.stringify(pcGrid, null, 2), (writeErr) => {
+                            if (writeErr) {
+                                console.error('Error writing PC grid data:', writeErr);
+                                return reject(writeErr);
+                            }
+                            console.log(`PC grid resized to ${newGridSize}x${newGridSize}`);
+                            resolve();
+                        });
+                    }
+                    catch (parseError) {
+                        console.error('Error updating PC grid size:', parseError);
+                        reject(parseError);
+                    }
+                });
+            });
+            updatePromises.push(pcGridPromise);
+            // Wait for all updates to complete before saving settings
+            Promise.all(updatePromises)
+                .then(() => {
+                fs_1.default.writeFile(settingsPath, JSON.stringify(settings, null, 2), (err) => {
+                    if (err) {
+                        return res.status(500).json({ success: false, message: 'Error updating settings' });
+                    }
+                    res.json(settings);
+                });
+            })
+                .catch((error) => {
+                console.error('Error updating grids:', error);
+                // Still save settings even if grid update fails
+                fs_1.default.writeFile(settingsPath, JSON.stringify(settings, null, 2), (err) => {
+                    if (err) {
+                        return res.status(500).json({ success: false, message: 'Error updating settings' });
+                    }
+                    res.json(settings);
+                });
+            });
+        }
+        else {
+            // No grid size change, just save settings
+            fs_1.default.writeFile(settingsPath, JSON.stringify(settings, null, 2), (err) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Error updating settings' });
+                }
+                res.json(settings);
+            });
+        }
     });
 });
 // Endpoint to set available ships

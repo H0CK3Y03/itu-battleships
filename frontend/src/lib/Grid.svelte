@@ -69,6 +69,15 @@
       return false;
     }
     
+    const cell = grid.tiles[rowIndex][colIndex];
+    
+    // Only show preview on empty cells OR cells that belong to the active ship being moved
+    const canShowPreview = cell === 'empty' || cell === activeShipName;
+    
+    if (!canShowPreview) {
+      return false;
+    }
+    
     const size = previewShip.size;
     
     if (previewRotation === HORIZONTAL) {
@@ -97,6 +106,25 @@
     }
     return colors[cellValue] || '#2C3E50';
   };
+
+  function getCellBackgroundColor(cell: string, rowIndex: number, colIndex: number): string {
+    // Priority 1: If cell has a placed ship (not empty), show ship color
+    if (cell !== 'empty' && cell !== 'hit' && cell !== 'miss') {
+      // Only show preview color if this is the active ship being moved
+      if (isPreviewCell(rowIndex, colIndex) && cell === activeShipName) {
+        return getPreviewColor();
+      }
+      return getCellColor(cell);
+    }
+    
+    // Priority 2: If cell is empty and is part of preview, show preview color
+    if (isPreviewCell(rowIndex, colIndex)) {
+      return getPreviewColor();
+    }
+    
+    // Priority 3: Default cell color (empty/hit/miss)
+    return getCellColor(cell);
+  }
   
   const getCellStatus = (cellValue: string): string => {
     if (cellValue === 'hit') return 'hit';
@@ -112,9 +140,9 @@
         <button
           class="cell {getCellStatus(cell)}"
           class:hoverable={showHoverEffect}
-          class:active-ship={!hideShips && cell === activeShipName}
+          class:active-ship={!hideShips && cell !== 'empty' && cell === activeShipName}
           class:preview={isPreviewCell(rowIndex, colIndex)}
-          style="background-color: {isPreviewCell(rowIndex, colIndex) ? getPreviewColor() : getCellColor(cell)}"
+          style="background-color: {getCellBackgroundColor(cell, rowIndex, colIndex)}"
           on:click={() => handleCellClick(rowIndex, colIndex)}
           on:contextmenu={(e) => handleCellRightClick(e, rowIndex, colIndex)}
           on:mouseenter={() => handleCellMouseEnter(rowIndex, colIndex)}
