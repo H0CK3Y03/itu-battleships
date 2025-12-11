@@ -12,6 +12,11 @@
   $: if (!isHandlingClick && !$selectedInventoryShip && !$activeShip && ships && ships.length > 0) {
     selectedInventoryShip.set(ships[0]);
   }
+
+  // Safety: If active ship exists, clear inventory selection
+  $: if ($activeShip && $selectedInventoryShip) {
+    selectedInventoryShip.set(null);
+  }
   
   const handleShipClick = async (ship: IShip) => {
     isHandlingClick = true;
