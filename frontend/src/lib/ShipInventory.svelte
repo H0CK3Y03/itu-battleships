@@ -4,6 +4,11 @@
   
   export let ships: IShip[] | null;
   
+  // Auto-select first ship if nothing selected and ships available
+  $: if (!$selectedInventoryShip && ships && ships.length > 0) {
+    selectedInventoryShip.set(ships[0]);
+  }
+  
   const handleShipClick = (ship: IShip) => {
     // Clear any active placed ship when selecting from inventory
     activeShip.set(null);
