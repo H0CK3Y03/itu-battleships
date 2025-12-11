@@ -1,16 +1,38 @@
 <script lang="ts">
   import type { IShip } from '../types/interfaces';
-  import { selectedInventoryShip, activeShip } from '../stores/gameStore';
+  import { selectedInventoryShip, activeShip, playerGrid } from '../stores/gameStore';
+  import { planningApi } from '../services/api';
   
   export let ships: IShip[] | null;
   
   // Auto-select first ship if nothing selected and ships available
-  $: if (!$selectedInventoryShip && ships && ships.length > 0) {
+  // BUT only if there's no active placed ship
+  $: if (!$selectedInventoryShip && !$activeShip && ships && ships.length > 0) {
     selectedInventoryShip.set(ships[0]);
   }
   
-  const handleShipClick = (ship: IShip) => {
-    // Clear any active placed ship when selecting from inventory
+  // Safety: If active ship exists, clear inventory selection
+  $: if ($activeShip && $selectedInventoryShip) {
+    selectedInventoryShip.set(null);
+  }
+  
+  const handleShipClick = async (ship: IShip) => {
+    // If there's an active placed ship, deselect it on the backend
+    if ($activeShip) {
+      try {
+        // Call the backend to deselect the active ship
+        await planningApi.handleActiveShip($activeShip.row, $activeShip.col);
+        
+        // Refresh grid state to ensure it's deselected
+        const data = await planningApi.getPlanningData();
+        activeShip.set(data.active_ship); // Should be null now
+        playerGrid.set(data.player_grid);
+      } catch (error) {
+        console.error('Failed to deselect active ship:', error);
+      }
+    }
+    
+    // Clear frontend state regardless
     activeShip.set(null);
     
     // Toggle selection
