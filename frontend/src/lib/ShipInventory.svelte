@@ -25,15 +25,13 @@
         
         // Refresh grid state to ensure it's deselected
         const data = await planningApi.getPlanningData();
-        activeShip.set(data.active_ship); // Should be null now
+        activeShip.set(data.active_ship);
         playerGrid.set(data.player_grid);
       } catch (error) {
         console.error('Failed to deselect active ship:', error);
+        return; // Don't proceed with inventory selection if deselection failed
       }
     }
-    
-    // Clear frontend state regardless
-    activeShip.set(null);
     
     // Toggle selection
     selectedInventoryShip.update(current => {
