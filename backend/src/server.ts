@@ -294,7 +294,60 @@ app.post('/api/settings', (req: Request, res: Response) => {
       selectedBoard: string;
     } = JSON.parse(data);
 
+    const oldBoard = settings.selectedBoard;
     settings.selectedBoard = selectedBoard || settings.selectedBoard;
+    
+    // If board size changed, update planning grid
+    if (oldBoard !== settings.selectedBoard) {
+      const newGridSize = settings.selectedBoard === '7x7' ? 7 : 10;
+      
+      fs.readFile(planningPath, 'utf8', (planningErr, planningData) => {
+        if (!planningErr) {
+          try {
+            const planning: IPlanningData = JSON.parse(planningData);
+            
+            // Resize player grid
+            planning.player_grid.gridSize = newGridSize;
+            planning.player_grid.tiles = Array(newGridSize).fill(null).map(() => Array(newGridSize).fill('empty'));
+            
+            // Clear all ships when grid size changes
+            planning.placed_ships = null;
+            planning.active_ship = null;
+            
+            // Reset available ships
+            planning.available_ships = [];
+            planning.all_ships?.forEach((ship) => {
+              planning.available_ships?.push({
+                id: ship.id,
+                size: ship.size,
+                color: ship.color,
+                rotation: 0,
+                name: ship.name
+              });
+            });
+            
+            fs.writeFileSync(planningPath, JSON.stringify(planning, null, 2));
+            console.log(`Grid resized to ${newGridSize}x${newGridSize}`);
+          } catch (parseError) {
+            console.error('Error updating planning grid size:', parseError);
+          }
+        }
+      });
+      
+      // Also update PC grid
+      fs.readFile(pcGridPath, 'utf8', (pcErr, pcData) => {
+        if (!pcErr) {
+          try {
+            const pcGrid = JSON.parse(pcData);
+            pcGrid.gridSize = newGridSize;
+            pcGrid.tiles = Array(newGridSize).fill(null).map(() => Array(newGridSize).fill('empty'));
+            fs.writeFileSync(pcGridPath, JSON.stringify(pcGrid, null, 2));
+          } catch (parseError) {
+            console.error('Error updating PC grid size:', parseError);
+          }
+        }
+      });
+    }
 
     fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), (err: NodeJS.ErrnoException | null) => {
       if (err) {
