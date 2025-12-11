@@ -73,6 +73,11 @@
         shipColors.set(colors);
         console.log('ShipPlacement - shipColors store updated');
       }
+      
+      // AUTO-SELECT: If no ship selected and ships are available, select first one
+      if (!$selectedInventoryShip && $availableShips && $availableShips.length > 0) {
+        selectedInventoryShip.set($availableShips[0]);
+      }
     } catch (error) {
       console.error('Failed to load planning data:', error);
     } finally {
@@ -186,11 +191,13 @@
           placedShips.set(data.placed_ships);
           activeShip.set(null); // Don't reselect placed ship
           
-          // Smart inventory selection: Find next ship with same size
+          // Smart inventory selection: Find next ship with same size, or first available
           if (data.available_ships && data.available_ships.length > 0) {
             const nextSameSize = data.available_ships.find(s => s.size === shipSize);
-            selectedInventoryShip.set(nextSameSize || null);
+            // If no same-size ship, select first available
+            selectedInventoryShip.set(nextSameSize || data.available_ships[0]);
           } else {
+            // No ships left
             selectedInventoryShip.set(null);
           }
         }

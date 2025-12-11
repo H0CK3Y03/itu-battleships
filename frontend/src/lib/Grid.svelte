@@ -182,7 +182,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.1s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,6 +207,7 @@
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
     z-index: 5;
     position: relative;
+    transition: none !important;
   }
 
   .cell.hit {
