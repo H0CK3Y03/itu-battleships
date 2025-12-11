@@ -21,11 +21,13 @@
     if ($activeShip) {
       try {
         // Call the backend to deselect the active ship
-        await planningApi.handleActiveShip($activeShip.row, $activeShip.col);
+        const response = await planningApi.handleActiveShip($activeShip.row, $activeShip.col);
+        
+        // Update active ship from response
+        activeShip.set(response.active_ship);
         
         // Refresh grid state to ensure it's deselected
         const data = await planningApi.getPlanningData();
-        activeShip.set(data.active_ship);
         playerGrid.set(data.player_grid);
       } catch (error) {
         console.error('Failed to deselect active ship:', error);
