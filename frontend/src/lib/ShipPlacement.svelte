@@ -28,7 +28,6 @@
   let previewRow: number | null = null;
   let previewCol: number | null = null;
   let previewRotation: number = HORIZONTAL;
-  let previewValid: boolean = true;
   
   onMount(async () => {
     loading = true;
@@ -104,40 +103,7 @@
     return null;
   }
 
-  // Check if preview placement is valid
-  function isPreviewValid(row: number, col: number, ship: IShip | IPlacedShip, rotation: number): boolean {
-    const grid = $playerGrid;
-    const size = ship.size;
-    
-    // Check bounds
-    if (rotation === HORIZONTAL) {
-      // Horizontal
-      if (col + size > grid.gridSize) return false;
-      
-      // Check for collisions
-      for (let i = col; i < col + size; i++) {
-        const cellValue = grid.tiles[row][i];
-        // Allow if empty or if it's the same ship being moved
-        if (cellValue !== 'empty' && cellValue !== ship.name) {
-          return false;
-        }
-      }
-    } else {
-      // Vertical
-      if (row + size > grid.gridSize) return false;
-      
-      // Check for collisions
-      for (let i = row; i < row + size; i++) {
-        const cellValue = grid.tiles[i][col];
-        // Allow if empty or if it's the same ship being moved
-        if (cellValue !== 'empty' && cellValue !== ship.name) {
-          return false;
-        }
-      }
-    }
-    
-    return true;
-  }
+
 
   // Handle mouse enter cell for preview
   const handleCellMouseEnter = (row: number, col: number) => {
@@ -150,10 +116,6 @@
     
     previewRow = row;
     previewCol = col;
-    
-    // Use active ship's rotation if moving, otherwise use preview rotation
-    const rotation = $activeShip ? $activeShip.rotation : previewRotation;
-    previewValid = isPreviewValid(row, col, ship, rotation);
   };
 
   // Handle mouse leave grid to clear preview
@@ -172,14 +134,6 @@
       } else {
         // Toggle preview rotation when no active ship
         previewRotation = previewRotation === HORIZONTAL ? VERTICAL : HORIZONTAL;
-        
-        // Revalidate preview if hovering
-        if (previewRow !== null && previewCol !== null) {
-          const ship = getShipForPreview();
-          if (ship) {
-            previewValid = isPreviewValid(previewRow, previewCol, ship, previewRotation);
-          }
-        }
       }
     }
     // Delete key for remove ship
@@ -210,37 +164,35 @@
             placedShips.set(data.placed_ships);
           } catch (error) {
             console.error('Failed to move ship:', error);
-            // Optionally show error message to user
           }
         } 
         // Otherwise, place a new ship
         else if ($availableShips && $availableShips.length > 0) {
-          // Use selected ship from inventory, or first available ship
           const shipToPlace = $selectedInventoryShip || $availableShips[0];
+          const shipSize = shipToPlace.size; // Remember size for later
           
-          // Create a new ship object with preview rotation applied
-          const shipWithRotation: IShip = {
-            id: shipToPlace.id,
-            size: shipToPlace.size,
-            color: shipToPlace.color,
-            rotation: previewRotation,
-            name: shipToPlace.name
-          };
+          // Apply preview rotation to ship before placing
+          const shipWithRotation = { ...shipToPlace, rotation: previewRotation };
           
           await planningApi.placeShip(shipWithRotation, row, col);
           
           // Reset preview rotation after placing
           previewRotation = HORIZONTAL;
           
-          // Clear selected inventory ship after placing
-          selectedInventoryShip.set(null);
-          
           // Refresh data
           const data = await planningApi.getPlanningData();
           playerGrid.set(data.player_grid);
           availableShips.set(data.available_ships);
           placedShips.set(data.placed_ships);
-          activeShip.set(data.active_ship);
+          activeShip.set(null); // Don't reselect placed ship
+          
+          // Smart inventory selection: Find next ship with same size
+          if (data.available_ships && data.available_ships.length > 0) {
+            const nextSameSize = data.available_ships.find(s => s.size === shipSize);
+            selectedInventoryShip.set(nextSameSize || null);
+          } else {
+            selectedInventoryShip.set(null);
+          }
         }
       } else if (cellValue !== 'empty') {
         // Clicking on a placed ship - select/deselect it
@@ -375,7 +327,6 @@
           previewCol={previewCol}
           previewShip={getShipForPreview()}
           previewRotation={$activeShip ? $activeShip.rotation : previewRotation}
-          previewValid={previewValid}
         />
       {/if}
     </div>

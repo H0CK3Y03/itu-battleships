@@ -16,7 +16,6 @@
   export let previewCol: number | null = null;
   export let previewShip: IShip | IPlacedShip | null = null;
   export let previewRotation: number = 0;
-  export let previewValid: boolean = true;
   
   // Constants for rotation values
   const HORIZONTAL = 0;
@@ -89,11 +88,6 @@
     }
   }
 
-  function getPreviewColor(): string {
-    if (!previewShip) return '';
-    return previewValid ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
-  }
-  
   $: getCellColor = (cellValue: string): string => {
     // Debug logging for color lookup
     if (cellValue !== 'empty') {
@@ -110,16 +104,23 @@
   function getCellBackgroundColor(cell: string, rowIndex: number, colIndex: number): string {
     // Priority 1: If cell has a placed ship (not empty), show ship color
     if (cell !== 'empty' && cell !== 'hit' && cell !== 'miss') {
-      // Only show preview color if this is the active ship being moved
+      // Only show semi-transparent if this is the active ship being moved AND preview is shown
       if (isPreviewCell(rowIndex, colIndex) && cell === activeShipName) {
-        return getPreviewColor();
+        const shipColor = getCellColor(cell);
+        // Make it semi-transparent for preview
+        return shipColor.replace('rgb', 'rgba').replace(')', ', 0.5)');
       }
       return getCellColor(cell);
     }
     
-    // Priority 2: If cell is empty and is part of preview, show preview color
-    if (isPreviewCell(rowIndex, colIndex)) {
-      return getPreviewColor();
+    // Priority 2: If cell is empty and is part of preview, show ship's color semi-transparent
+    if (isPreviewCell(rowIndex, colIndex) && previewShip) {
+      const shipColor = colors[previewShip.name] || '#7F8C8D';
+      // Convert hex to rgba with transparency
+      const r = parseInt(shipColor.slice(1, 3), 16);
+      const g = parseInt(shipColor.slice(3, 5), 16);
+      const b = parseInt(shipColor.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, 0.4)`;
     }
     
     // Priority 3: Default cell color (empty/hit/miss)

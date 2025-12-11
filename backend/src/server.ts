@@ -299,7 +299,11 @@ app.post('/api/settings', (req: Request, res: Response) => {
     
     // If board size changed, update planning grid
     if (oldBoard !== settings.selectedBoard) {
-      const newGridSize = settings.selectedBoard === '7x7' ? 7 : 10;
+      // Parse grid size from format "NxN" using regex
+      const gridSizeMatch = settings.selectedBoard.match(/(\d+)x\d+/);
+      const newGridSize = gridSizeMatch ? parseInt(gridSizeMatch[1], 10) : 10;
+      
+      console.log(`Grid size changing from ${oldBoard} to ${settings.selectedBoard} (${newGridSize}x${newGridSize})`);
       
       // Use promises to wait for all operations to complete
       const updatePromises: Promise<void>[] = [];
