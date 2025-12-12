@@ -72,10 +72,13 @@
       </Button>
     </div>
   </div>
+  
+  <div class="student-id">xvesela00</div>
 </div>
 
 <style>
   .main-menu {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -138,5 +141,16 @@
     flex-direction: column;
     gap: 20px;
     margin-top: 20px;
+  }
+
+  .student-id {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    color: #7F8C8D;
+    font-size: 12px;
+    font-family: monospace;
+    opacity: 0.8;
+    user-select: none;
   }
 </style>
