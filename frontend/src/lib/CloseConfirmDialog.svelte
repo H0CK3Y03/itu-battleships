@@ -7,8 +7,8 @@
 </script>
 
 {#if show}
-  <div class="modal-backdrop" on:click={onCancel}>
-    <div class="modal-content" on:click|stopPropagation>
+  <div class="modal-backdrop" role="button" tabindex="0" on:click={onCancel} on:keydown={(e) => e.key === 'Enter' && onCancel()}>
+    <div class="modal-content" role="dialog" aria-modal="true" tabindex="0" on:click|stopPropagation on:keydown={(e) => e.key === 'Enter' && e.stopPropagation()}>
       <h2>Quit to Menu?</h2>
       <p>Your progress will be lost. Are you sure you want to quit?</p>
       <div class="button-group">
