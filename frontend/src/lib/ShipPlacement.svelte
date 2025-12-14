@@ -143,10 +143,7 @@
     }
     // Delete key for remove ship
     else if (event.key === 'Delete' || event.key === 'Backspace') {
-      event.preventDefault();
-      if ($activeShip) {
-        await handleUndo();
-      }
+      await handleUndo();
     }
   };
   
