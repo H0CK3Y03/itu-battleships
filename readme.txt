@@ -45,7 +45,8 @@ itu-battleships/
 │   │   ├── player_grid.json                     Player's grid state (legacy)
 │   │   ├── planning.json                        Ship placement data (grids, ships, colors)
 │   │   ├── game_state.json                      Active game state (health, turns, AI data)
-│   │   └── pc_ships.json                        Opponent's ship positions
+│   │   ├── pc_ships.json                        Opponent's ship positions
+│   │   └── zaloha_data.json                     Initialized ships
 │   ├── src/                                     TypeScript source files
 │   │   ├── server.ts                            Express server with all API endpoints
 │   │   └── data_interfaces.ts                   TypeScript interfaces for backend
@@ -75,11 +76,16 @@ itu-battleships/
 │   │   ├── assets/                              Static assets (images, fonts)
 │   │   ├── App.svelte                           Root Svelte component
 │   │   ├── main.ts                              Application entry point
+│   │   ├── vite-env.d.ts                        Vite + TypeScript environment declarations
 │   │   └── app.css                              Global styles
+│   ├── index.html                               Vite HTML entry point
 │   ├── package.json                             Frontend dependencies
 │   ├── package-lock.json                        Exact frontend dependencies
 │   ├── vite.config.ts                           Vite build configuration
-│   └── tsconfig.json                            TypeScript configuration
+│   ├── svelte.config.ts                         Svelte compiler and preprocessing configuration
+│   ├── tsconfig.node.json                       TypeScript config for Node/build tooling
+│   ├── tsconfig.app.json                        TypeScript config for browser application
+│   └── tsconfig.json                            Shared base TypeScript config
 │
 ├── src-tauri/                                   Tauri desktop wrapper (Rust)
 │   ├── src/
@@ -87,8 +93,11 @@ itu-battleships/
 │   │   └── lib.rs                               Tauri library configuration
 │   ├── icons/                                   Application icons
 │   ├── capabilities/                            Tauri capabilities configuration
-│   ├── Cargo.toml                               Rust dependencies
+│   ├── build.rs                                 Rust build script (executed by Cargo)
+│   ├── Cargo.toml                               Rust dependency declarations
+│   ├── Cargo.lock                               Exact resolved dependency versions
 │   └── tauri.conf.json                          Tauri configuration
 │
-├── package.json                                 Root package.json for Tauri CLI
+├── package.json                                 Root package.json for Tauri
+├── package-lock.json                            Root package-lock.json for Tauri
 └── readme.txt                                   Project structure
