@@ -1,4 +1,7 @@
+// Author: Adam Vesely (xvesela00)
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+// The main entry point for the Tauri application
 pub fn run() {
   tauri::Builder::default()
     .setup(|app| {

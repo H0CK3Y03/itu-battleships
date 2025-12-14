@@ -1,3 +1,5 @@
+<!-- Author: Adam Vesely (xvesela00) -->
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import Button from './Button.svelte';

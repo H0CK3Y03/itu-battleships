@@ -1,9 +1,12 @@
+// Author: Adam Vesely (xvesela00)
+
 import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
 
 const BACKEND_URL = 'http://localhost:5000';
 
+// Function to poll backend health endpoint
 async function checkBackendHealth(maxAttempts = 20, intervalMs = 500): Promise<boolean> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
@@ -21,6 +24,7 @@ async function checkBackendHealth(maxAttempts = 20, intervalMs = 500): Promise<b
   return false;
 }
 
+// Initialize the application
 async function initApp() {
   if (window.__TAURI__) {
     try {
@@ -49,6 +53,7 @@ async function initApp() {
     console.log('Running in browser mode - expecting external backend on port 5000');
   }
 
+// Mount the Svelte application
   const app = mount(App, {
     target: document.getElementById('app')!,
   });

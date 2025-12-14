@@ -1,3 +1,5 @@
+<!-- Author: Adam Vesely (xvesela00) -->
+
 <script lang="ts">
   import type { IGrid, IShip, IPlacedShip } from '../types/interfaces';
   

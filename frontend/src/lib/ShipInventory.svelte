@@ -1,3 +1,5 @@
+<!-- Author: Adam Vesely (xvesela00) -->
+
 <script lang="ts">
   import type { IShip } from '../types/interfaces';
   import { selectedInventoryShip, activeShip, playerGrid } from '../stores/gameStore';

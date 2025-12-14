@@ -1,10 +1,12 @@
+// Author: Adam Vesely (xvesela00)
+
 import { writable, derived } from 'svelte/store';
 import type { IShip, IPlacedShip, IGrid } from '../types/interfaces';
 
 // Current screen state
 export const currentScreen = writable<'menu' | 'planning' | 'game'>('menu');
 
-// Game settings
+// Grid size
 export const boardSize = writable<string>('10x10');
 
 // Planning state

@@ -1,3 +1,5 @@
+<!-- Author: Adam Vesely (xvesela00) -->
+
 <script lang="ts">
   export let variant: 'primary' | 'danger' | 'secondary' = 'primary';
   export let disabled = false;

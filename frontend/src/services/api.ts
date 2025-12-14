@@ -1,8 +1,10 @@
+// Author: Adam Vesely (xvesela00)
+
 import type { IShip, IPlacedShip, IPlanningData, ISettings, IScreenState, IGrid } from '../types/interfaces';
 
 const API_BASE = 'http://localhost:5000/api';
 
-// Helper function for fetch with error handling
+// Helper function for fetch
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -24,7 +26,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   }
 }
 
-// Settings & Navigation
+// Settings
 export const settingsApi = {
   getSettings: () => fetchApi<ISettings>('/settings'),
   updateSettings: (selectedBoard: string) => 
@@ -43,7 +45,7 @@ export const screenApi = {
     }),
 };
 
-// Planning (Ship Placement)
+// Planning (ship placement)
 export const planningApi = {
   getPlanningData: () => fetchApi<IPlanningData>('/planning'),
   getAvailableShips: () => fetchApi<{ available_ships: IShip[] | null }>('/planning/available-ships'),
@@ -101,7 +103,7 @@ export const gridApi = {
     }),
 };
 
-// Game Mechanics
+// Game mechanics
 export const gameApi = {
   initGame: () => fetchApi<{ message: string }>('/game/init', { method: 'POST' }),
   playerAttack: (row: number, col: number) => 
