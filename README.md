@@ -679,10 +679,7 @@ git archive -o 01_xvesela00_source.zip HEAD
 
 **Option 3: Manual Selection**
 
-1. Create folder: `01_xvesela00_source`
-2. Copy files from "Include" list above
-3. Zip the folder
-4. Verify archive size (should be ~500 KB - 2 MB without dependencies)
+`zip -r 01_xvesela00_source.zip backend/data backend/src backend/package.json backend/package-lock.json backend/tsconfig.json frontend/public/ frontend/src/ frontend/index.html frontend/package.json frontend/package-lock.json frontend/svelte.config.js frontend/tsconfig.app.json frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts src-tauri/capabilities/ src-tauri/icons/ src-tauri/src/ src-tauri/build.rs src-tauri/Cargo.lock src-tauri/Cargo.toml src-tauri/tauri.conf.json package.json package-lock.json readme.txt`
 
 ---
 
