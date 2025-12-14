@@ -136,7 +136,7 @@
   };
   
   const handleClose = async () => {
-    // Show confirmation dialog instead of closing immediately
+    // Show confirmation dialog
     showCloseDialog = true;
   };
 

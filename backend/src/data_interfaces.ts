@@ -37,8 +37,8 @@ export interface IGameState {
   aiMode: 'hunt' | 'target';
   aiLastHit: { row: number; col: number } | null;
   aiTargets: { row: number; col: number }[];
-  playerShipHealth: Record<string, number>; // ship name -> remaining health
-  pcShipHealth: Record<string, number>; // ship name -> remaining health
+  playerShipHealth: Record<string, number>; // ship name, remaining health
+  pcShipHealth: Record<string, number>; // ship name, remaining health
 }
 
 export interface IPcShipsData {

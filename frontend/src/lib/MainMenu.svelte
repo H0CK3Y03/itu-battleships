@@ -148,7 +148,7 @@
     bottom: 10px;
     right: 15px;
     color: #7F8C8D;
-    font-size: 12px;
+    font-size: 24px;
     font-family: monospace;
     opacity: 0.8;
     user-select: none;
